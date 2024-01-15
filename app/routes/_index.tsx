@@ -1,8 +1,8 @@
 import type { MetaFunction } from "@remix-run/node";
 
 import { authenticator } from "~/utils/auth.server";
-import { Form, useLoaderData } from "@remix-run/react";
-import { ActionFunction, json } from "@remix-run/node";
+import { Form, useLoaderData, useSearchParams } from "@remix-run/react";
+import { ActionFunction, json, redirect } from "@remix-run/node";
 import { LoaderFunctionArgs } from "@remix-run/node";
 import TodoForm from "~/components/TodoForm";
 import { useEffect, useState } from "react";
@@ -14,8 +14,8 @@ import { User } from "@prisma/client";
 
 export const meta: MetaFunction = () => {
   return [
-    { title: "remix-todo-app" },
-    { name: "description", content: "Welcome to Remix!" },
+    { title: "todo-app" },
+    { name: "description", content: "Todo app using Remix" },
   ];
 };
 
@@ -28,15 +28,32 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   searchParams.append("page", "0");
   searchParams.append("cat", "all");
 
-  const categories = await db.category.findMany();
+  const categories = await db.category.findMany({
+    where: {
+      user_id: user.uid,
+    },
+  });
 
-  const whereCondition = {
-    user_id: user.uid as string,
+  const whereCondition: {
+    user_id: string;
+    category_id?: string;
+    title?: {
+      contains: string;
+    };
+  } = {
+    user_id: user.uid,
   };
 
   const categoryId = searchParams.get("cat");
+  const search = searchParams.get("search");
   if (categoryId !== "all") {
-    whereCondition.category_id = categoryId;
+    whereCondition.category_id = categoryId as string;
+  }
+
+  if (search !== "") {
+    whereCondition.title = {
+      contains: search ? search : "",
+    };
   }
 
   const todos = await db.todo.findMany({
@@ -44,7 +61,9 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
     orderBy: {
       created_at: "desc",
     },
-    skip: searchParams.get("page") ? 5 * searchParams.get("page") : 0,
+    skip: searchParams.get("page")
+      ? 5 * parseInt(searchParams.get("page") as string)
+      : 0,
     take: 5,
   });
 
@@ -53,9 +72,30 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   if (searchParams.get("todoId")) {
     subTodos = await db.subTodo.findMany({
       where: {
-        todo_id: searchParams.get("todoId") as String,
+        todo_id: searchParams.get("todoId") as string,
       },
     });
+
+    const index = subTodos.findIndex(({ completed }) => completed == false);
+    if (index == -1 && subTodos.length > 0) {
+      await db.todo.update({
+        where: {
+          id: searchParams.get("todoId") as string,
+        },
+        data: {
+          completed: true,
+        },
+      });
+    } else {
+      await db.todo.update({
+        where: {
+          id: searchParams.get("todoId") as string,
+        },
+        data: {
+          completed: false,
+        },
+      });
+    }
   }
 
   const pages = Math.ceil((await db.todo.findMany()).length / 5);
@@ -68,7 +108,7 @@ export const action: ActionFunction = async ({ request }) => {
   const form = await request.formData();
   const action = form.get("action");
 
-  const user = await authenticator.isAuthenticated(request, {
+  const user: any = await authenticator.isAuthenticated(request, {
     failureRedirect: "/login",
   });
 
@@ -80,6 +120,7 @@ export const action: ActionFunction = async ({ request }) => {
     case "add-cat": {
       return await db.category.create({
         data: {
+          user_id: user.uid as string,
           category_name: form.get("category_name") as any,
           display_name: form.get("display_name") as any,
         },
@@ -107,7 +148,18 @@ export const action: ActionFunction = async ({ request }) => {
     case "delete-todo": {
       return await db.todo.delete({
         where: {
+          id: form.get("todoId") as string,
+        },
+      });
+    }
+
+    case "edit-todo": {
+      return await db.todo.update({
+        where: {
           id: form.get("todoId"),
+        },
+        data: {
+          title: form.get("title"),
         },
       });
     }
@@ -116,8 +168,8 @@ export const action: ActionFunction = async ({ request }) => {
       return await db.subTodo.create({
         data: {
           user_id: user.uid,
-          todo_id: form.get("todoId"),
-          title: form.get("subTodo"),
+          todo_id: form.get("todoId") as string,
+          title: form.get("subTodo") as string,
         },
       });
     }
@@ -125,7 +177,7 @@ export const action: ActionFunction = async ({ request }) => {
     case "delete-subtodo": {
       return await db.subTodo.delete({
         where: {
-          id: form.get("subtodoId"),
+          id: form.get("subtodoId") as string,
         },
       });
     }
@@ -133,10 +185,10 @@ export const action: ActionFunction = async ({ request }) => {
     case "toggle-todo": {
       const todo = await db.todo.update({
         where: {
-          id: form.get("todoId"),
+          id: form.get("todoId") as string,
         },
         data: {
-          completed: !JSON.parse(form.get("completed")),
+          completed: !JSON.parse(form.get("completed") as string) as boolean,
         },
       });
       return todo;
@@ -145,13 +197,24 @@ export const action: ActionFunction = async ({ request }) => {
     case "toggle-subTodo": {
       const todo = await db.subTodo.update({
         where: {
-          id: form.get("subTodoId"),
+          id: form.get("subTodoId") as string,
         },
         data: {
-          completed: !JSON.parse(form.get("completed")),
+          completed: !JSON.parse(form.get("completed") as string),
         },
       });
       return todo;
+    }
+
+    case "edit-subtodo": {
+      return await db.subTodo.update({
+        where: {
+          id: form.get("subtodoId"),
+        },
+        data: {
+          title: form.get("title"),
+        },
+      });
     }
   }
 };
@@ -159,6 +222,12 @@ export const action: ActionFunction = async ({ request }) => {
 export default function Index() {
   const [showCategory, setShowCategory] = useState(false);
   const user: any = useLoaderData();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  searchParams.append("page", "0");
+  searchParams.append("cat", "all");
+
+  console.log(searchParams);
 
   return (
     <div>

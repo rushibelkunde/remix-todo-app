@@ -1,59 +1,114 @@
-import { useLoaderData } from '@remix-run/react'
-import TodoItem from './TodoItem'
-import React, { useState } from 'react'
-import { useSearchParams } from '@remix-run/react'
-import { Category, Todo } from '@prisma/client'
-
+import { useLoaderData } from "@remix-run/react";
+import TodoItem from "./TodoItem";
+import React, { useState } from "react";
+import { useSearchParams } from "@remix-run/react";
+import { Category, Todo } from "@prisma/client";
+import { Form } from "@remix-run/react";
 
 const TodoList = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
 
-  const [searchParams, setSearchParams] = useSearchParams()
+  const { categories, todos, pages }: any = useLoaderData();
 
-  const {categories,todos, pages} : any = useLoaderData()
-  
+  const [search, setSearch] = useState("");
 
-  console.log(pages)
+  console.log(pages);
   return (
     <div>
-        <ul className='flex flex-col items-center gap-2 mt-5'>
-          <select 
-          name="category" className='m-auto' id="" value={searchParams.get("cat") as string}
+      <div className="flex gap-3 w-full items-center justify-center mt-2">
+        <input
+          type="text"
+          name="search"
+          onChange={(e) => setSearch(e.target.value)}
+          className="bg-slate-200 rounded-xl p-2"
+          placeholder="search.."
+          value={search}
+        />
+        {search ? (
+          <button
+            onClick={() => {
+              setSearchParams("");
+              setSearch("");
+            }}
+            className=" -ml-10"
+          >
+            X
+          </button>
+        ) : (
+          ""
+        )}
+        <button
+          onClick={() => {
+            const params = new URLSearchParams();
+            params.append(
+              "cat",
+              searchParams.get("cat") ? searchParams.get("cat") : "all"
+            );
+            params.append(
+              "page",
+              searchParams.get("page") ? searchParams.get("page") : "0"
+            );
+            params.append("search", search);
+            setSearchParams(params, {
+              preventScrollReset: true,
+            });
+          }}
+          className="ml-3 bg-green-700 text-white p-2 rounded-xl"
+        >
+          Search
+        </button>
+      </div>
+
+      <ul className="flex flex-col items-center gap-2 mt-5">
+        <select
+          name="category"
+          className="m-auto"
+          id=""
+          value={searchParams.get("cat") as string}
           onChange={(e) => {
             const params = new URLSearchParams();
-            params.append("page", "0")
-            params.append("cat", `${e.target.value}`)
+            params.append("page", "0");
+            params.append("cat", `${e.target.value}`);
             setSearchParams(params, {
               preventScrollReset: false,
-            })
-          }}>
-            <option value="all">all</option>
-            {categories.map((category: Category) => (
-              <option value={category.id}>{category.display_name}</option>
-            ))}
-          </select>
-          {todos?.map((todo: Todo)=> (
-            <TodoItem key={todo.id} todo={todo} currentPage={searchParams.get('page') as string} />
+            });
+          }}
+        >
+          <option value="all">all</option>
+          {categories.map((category: Category) => (
+            <option value={category.id}>{category.display_name}</option>
           ))}
-        </ul>
+        </select>
+        {todos?.map((todo: Todo) => (
+          <TodoItem
+            key={todo.id}
+            todo={todo}
+            currentPage={searchParams.get("page") as string}
+          />
+        ))}
+      </ul>
 
-        <div className='flex justify-center items-center gap-2 w-full'>
-        {Array.from({ length: parseInt(pages as string) }, (_, index) =>
-        <button onClick={ ()=> {
-          const params = new URLSearchParams();
-          params.append('cat', searchParams.get('cat') as string)
-          params.append("page", `${index}`);
-          setSearchParams(params, {
-            preventScrollReset: true,
-          })}}
-        >{index+1}
-        </button>
-         )
-         }
+      <div className="flex justify-center items-center gap-2 w-full">
+        {Array.from({ length: parseInt(pages as string) }, (_, index) => (
+          <button
+            onClick={() => {
+              const params = new URLSearchParams();
+              params.append(
+                "cat",
+                searchParams.get("cat") ? searchParams.get("cat") : "all"
+              );
+              params.append("page", `${index}`);
+              setSearchParams(params, {
+                preventScrollReset: true,
+              });
+            }}
+          >
+            {index + 1}
+          </button>
+        ))}
+      </div>
 
-        </div>
-
-        
-        {/* {loading ?
+      {/* {loading ?
           <div role="status" className='mt-10'>
           <svg aria-hidden="true" className="m-auto w-10 h-10 text-gray-200 animate-spin dark:text-gray-600 fill-blue-600" viewBox="0 0 100 101" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.08144 50.5908C9.08144 73.1895 27.4013 91.5094 50 91.5094C72.5987 91.5094 90.9186 73.1895 90.9186 50.5908C90.9186 27.9921 72.5987 9.67226 50 9.67226C27.4013 9.67226 9.08144 27.9921 9.08144 50.5908Z" fill="currentColor" />
@@ -63,8 +118,8 @@ const TodoList = () => {
         </div> 
         :
         ""} */}
-      </div>
-  )
-}
+    </div>
+  );
+};
 
-export default TodoList
+export default TodoList;
