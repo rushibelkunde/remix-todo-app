@@ -1,7 +1,7 @@
 import type { MetaFunction } from "@remix-run/node";
 
 import { authenticator } from "~/utils/auth.server";
-import { Form, useLoaderData, useSearchParams } from "@remix-run/react";
+import { Form, useFetchers, useLoaderData, useSearchParams } from "@remix-run/react";
 import { ActionFunction, json, redirect } from "@remix-run/node";
 import { LoaderFunctionArgs } from "@remix-run/node";
 import TodoForm from "~/components/TodoForm";
@@ -21,6 +21,8 @@ export const meta: MetaFunction = () => {
 
 // Loader Function
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
+
+  
   const user: User | any = await authenticator.isAuthenticated(request, {
     failureRedirect: "/login",
   });
@@ -107,10 +109,15 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
 export const action: ActionFunction = async ({ request }) => {
   const form = await request.formData();
   const action = form.get("action");
+  console.log(action)
+
+  console.log(Object.fromEntries(form))
 
   const user: any = await authenticator.isAuthenticated(request, {
     failureRedirect: "/login",
   });
+
+  
 
   switch (action) {
     case "logout": {
@@ -138,14 +145,16 @@ export const action: ActionFunction = async ({ request }) => {
     case "add-todo": {
       return await db.todo.create({
         data: {
+          id: form.get("id"),
           user_id: user.uid as string,
-          title: form.get("todo"),
+          title: form.get("title"),
           category_id: form.get("category"),
         } as Todo,
       });
     }
 
     case "delete-todo": {
+      console.log("delete")
       return await db.todo.delete({
         where: {
           id: form.get("todoId") as string,
@@ -216,7 +225,27 @@ export const action: ActionFunction = async ({ request }) => {
         },
       });
     }
+
+    
+
+    // case "get-subtodos": {
+    //   const subtodos = await db.subTodo.findMany({
+    //     where: {
+    //       todo_id: form.get('todoId') as string,
+    //     },
+    //   });
+
+    //   return {subtodos}
+    // }
   }
+  // return await db.todo.create({
+  //   data: {
+  //     id: form.get("id"),
+  //     user_id: user.uid as string,
+  //     title: form.get("title"),
+  //     category_id: form.get("category"),
+  //   } as Todo,
+  // });
 };
 
 export default function Index() {

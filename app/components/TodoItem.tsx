@@ -1,13 +1,21 @@
 import React, { useState } from "react";
 import SubTodos from "./SubTodos";
-import { Form, useActionData } from "@remix-run/react";
+import {
+  Form,
+  useActionData,
+  useNavigate,
+  useNavigation,
+} from "@remix-run/react";
 import { useSearchParams } from "@remix-run/react";
 import { useSubmit } from "@remix-run/react";
 import type { Todo } from "@prisma/client";
+import { Link } from "@remix-run/react";
 
 const TodoItem = ({
   todo,
   currentPage,
+  showSubtodo,
+  setShowSubtodo,
 }: {
   todo: Todo;
   currentPage: number;
@@ -19,6 +27,7 @@ const TodoItem = ({
   const [onEdit, setOnEdit] = useState(false);
 
   const [deleteDialog, setDeleteDialog] = useState(false);
+  const navigation = useNavigation();
   return (
     <>
       <li
@@ -91,20 +100,34 @@ const TodoItem = ({
         )}
 
         <span className="text-sm font-normal">
-          {new Date(todo.created_at).toISOString().substring(0, 10)}
+          {todo.created_at
+            ? new Date(todo.created_at).toISOString().substring(0, 10)
+            : ""}
         </span>
 
         {deleteDialog ? (
-          <Form method="POST">
+          <Form
+            method="POST"
+            // onSubmit={(e) => {
+            //   e.preventDefault();
+            //   let formData = new FormData(e.currentTarget);
+            //   let id = formData.get("todoId");
+            //   submit({ id }, { navigate: false, method: "post" });
+            // }}
+          >
+            <input type="hidden" name="action" value={"delete-todo"} />
             <input type="hidden" name="todoId" value={todo.id} />
             <div className="flex flex-col justify-center gap-2">
               <button
-                name="action"
-                value="delete-todo"
                 type="submit"
+                name="action"
+                value={"delete-todo"}
                 className="bg-red-600 text-white rounded-xl p-2"
               >
-                Confirm Delete
+                {navigation.formData?.get("action") == "delete-todo" &&
+                navigation.state !== "idle"
+                  ? "Deleting..."
+                  : "Delete"}
               </button>
 
               <button
@@ -168,7 +191,7 @@ const TodoItem = ({
         )}
       </li>
       <div>
-        {searchParams.get("todoId") == todo.id ? (
+        {searchParams.get("todoId") === todo.id ? (
           <SubTodos todoId={todo.id} />
         ) : (
           ""

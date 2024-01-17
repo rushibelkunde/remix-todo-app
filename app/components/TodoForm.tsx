@@ -1,22 +1,38 @@
 import React, { useState } from "react";
-import { Form, useLoaderData } from "@remix-run/react";
+import { Form, useLoaderData, useSubmit } from "@remix-run/react";
 import type { Category } from "@prisma/client";
+import { useNavigation } from "@remix-run/react";
 
 const TodoForm = () => {
   const [category, setCategory] = useState("");
   const { categories }: { categories: any[] } = useLoaderData();
 
-  const [disable, setDisable] = useState(false);
+  const navigation = useNavigation()
+
+  const submit = useSubmit()
 
   return (
     <div>
       <Form
+
+        onSubmit={ (e) => {
+          e.preventDefault();
+                 let formData = new FormData(e.currentTarget);
+                 let data = Object.fromEntries(formData)
+          submit(
+                     { ...data, id: window.crypto.randomUUID() },
+                    { navigate: false, method: "post"}
+                  );
+        
+        }
+      }
         method="POST"
         className="flex gap-2 w-full items-center justify-center mt-10"
       >
+        <input type="hidden" name="action" value={"add-todo"} />
         <input
           type="text"
-          name="todo"
+          name="title"
           placeholder="todo.."
           className="bg-slate-200 rounded-xl p-2"
           required={true}
@@ -37,14 +53,10 @@ const TodoForm = () => {
         </select>
         <button
           type="submit"
-          name="action"
-          value={"add-todo"}
-          className={`${
-            disable ? "bg-gray-700" : "bg-black"
+          className={`${ "bg-black"
           } rounded-xl p-1 sm:p-2  text-white font-semibold`}
-          disabled={disable}
         >
-          {disable ? "Adding..." : "Add"}
+         Add
         </button>
       </Form>
 

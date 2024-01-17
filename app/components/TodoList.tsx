@@ -4,13 +4,34 @@ import React, { useState } from "react";
 import { useSearchParams } from "@remix-run/react";
 import { Category, Todo } from "@prisma/client";
 import { Form } from "@remix-run/react";
+import { useFetchers } from "@remix-run/react";
 
 const TodoList = () => {
+  const fetchers = useFetchers()
+  console.log(fetchers)
   const [searchParams, setSearchParams] = useSearchParams();
+  const [showSubtodo, setShowSubtodo] = useState('')
 
   const { categories, todos, pages }: any = useLoaderData();
 
   const [search, setSearch] = useState("");
+
+
+  let optimisticTodos = fetchers.reduce((memo, f) => {
+        if (f.formData) {
+          let data = Object.fromEntries(f.formData)
+    
+          if (!todos.map((e) => e.id).includes(data.id)) {
+            memo.push(data);
+          }
+        }
+    
+       return memo;
+     }, []);
+
+    let Todos = [...optimisticTodos, ...todos]
+
+    console.log(optimisticTodos)
 
   console.log(pages);
   return (
@@ -79,10 +100,12 @@ const TodoList = () => {
             <option value={category.id}>{category.display_name}</option>
           ))}
         </select>
-        {todos?.map((todo: Todo) => (
+        {Todos?.map((todo: Todo) => (
           <TodoItem
             key={todo.id}
             todo={todo}
+            showSubtodo={showSubtodo}
+            setShowSubtodo={setShowSubtodo}
             currentPage={searchParams.get("page") as string}
           />
         ))}
