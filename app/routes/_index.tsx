@@ -108,6 +108,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
 // Action Function
 export const action: ActionFunction = async ({ request }) => {
   const form = await request.formData();
+  console.log(form)
   const action = form.get("action");
   console.log(action)
 
@@ -127,6 +128,7 @@ export const action: ActionFunction = async ({ request }) => {
     case "add-cat": {
       return await db.category.create({
         data: {
+          id: form.get('id'),
           user_id: user.uid as string,
           category_name: form.get("category_name") as any,
           display_name: form.get("display_name") as any,
@@ -157,7 +159,7 @@ export const action: ActionFunction = async ({ request }) => {
       console.log("delete")
       return await db.todo.delete({
         where: {
-          id: form.get("todoId") as string,
+          id: form.get("id") as string,
         },
       });
     }

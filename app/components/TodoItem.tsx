@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import SubTodos from "./SubTodos";
 import {
   Form,
@@ -16,6 +16,7 @@ const TodoItem = ({
   currentPage,
   showSubtodo,
   setShowSubtodo,
+  Todos
 }: {
   todo: Todo;
   currentPage: number;
@@ -25,6 +26,7 @@ const TodoItem = ({
   const [searchParams, setSearchParams] = useSearchParams();
 
   const [onEdit, setOnEdit] = useState(false);
+  const buttonRef = useRef()
 
   const [deleteDialog, setDeleteDialog] = useState(false);
   const navigation = useNavigation();
@@ -108,17 +110,20 @@ const TodoItem = ({
         {deleteDialog ? (
           <Form
             method="POST"
-            // onSubmit={(e) => {
-            //   e.preventDefault();
-            //   let formData = new FormData(e.currentTarget);
-            //   let id = formData.get("todoId");
-            //   submit({ id }, { navigate: false, method: "post" });
-            // }}
+            onSubmit={(e) => {
+              e.preventDefault();
+              let formData = new FormData(e.currentTarget);
+              let id = formData.get('todoId')
+              //  Todos =  Todos.filter((todo)=> todo.id !== id)
+
+              submit({id, action: "delete-todo"}, { navigate: false, method: "post" });
+            }}
           >
             <input type="hidden" name="action" value={"delete-todo"} />
             <input type="hidden" name="todoId" value={todo.id} />
             <div className="flex flex-col justify-center gap-2">
-              <button
+              <button 
+                ref={buttonRef}
                 type="submit"
                 name="action"
                 value={"delete-todo"}
@@ -130,7 +135,7 @@ const TodoItem = ({
                   : "Delete"}
               </button>
 
-              <button
+              <button 
                 className="bg-black text-white rounded-xl p-2"
                 onClick={() => setDeleteDialog(false)}
               >

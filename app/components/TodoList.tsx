@@ -1,6 +1,6 @@
 import { useLoaderData } from "@remix-run/react";
 import TodoItem from "./TodoItem";
-import React, { useState } from "react";
+import React, { useState, useTransition } from "react";
 import { useSearchParams } from "@remix-run/react";
 import { Category, Todo } from "@prisma/client";
 import { Form } from "@remix-run/react";
@@ -8,32 +8,51 @@ import { useFetchers } from "@remix-run/react";
 
 const TodoList = () => {
   const fetchers = useFetchers()
-  console.log(fetchers)
+  const transition = useTransition()
+  console.log("fetchers",fetchers)
   const [searchParams, setSearchParams] = useSearchParams();
   const [showSubtodo, setShowSubtodo] = useState('')
 
-  const { categories, todos, pages }: any = useLoaderData();
+  let { categories, todos, pages }: any = useLoaderData();
 
+  
   const [search, setSearch] = useState("");
 
-
   let optimisticTodos = fetchers.reduce((memo, f) => {
-        if (f.formData) {
+        if (f.formData && f.formData.get('intent')=="add-todo") {
           let data = Object.fromEntries(f.formData)
     
           if (!todos.map((e) => e.id).includes(data.id)) {
             memo.push(data);
           }
         }
+        if (f.formData && f.formData.get('action')=="delete-todo") {
+          console.log("delete optimistic")
+          let data = Object.fromEntries(f.formData)
+
+            todos = todos.filter((todo)=> todo.id !== data.id)
+            console.log(todos)
+            
+        }
+
     
        return memo;
      }, []);
 
+    //  if (f.formData && f.formData.get('action')=="delete-todo") {
+    //   let data = Object.fromEntries(f.formData)
+
+    //     todos = todos.filter((todo)=> todo.id == data.id)
+        
+    // }
+
+    
+
     let Todos = [...optimisticTodos, ...todos]
 
-    console.log(optimisticTodos)
+    // const [stateTodos, setStateTodos] = useState([...Todos])
 
-  console.log(pages);
+    
   return (
     <div>
       <div className="flex gap-3 w-full items-center justify-center mt-2">
@@ -107,6 +126,7 @@ const TodoList = () => {
             showSubtodo={showSubtodo}
             setShowSubtodo={setShowSubtodo}
             currentPage={searchParams.get("page") as string}
+            Todos = {Todos}
           />
         ))}
       </ul>

@@ -1,16 +1,54 @@
-import { useLoaderData } from "@remix-run/react";
+import { useFetchers, useLoaderData, useSubmit } from "@remix-run/react";
 import React, { useState } from "react";
 import { Form } from "@remix-run/react";
 import type { Category } from "@prisma/client";
 
 const CategoryForm = () => {
-  const { categories }: any = useLoaderData();
+  let { categories }: any = useLoaderData();
   console.log("categories", categories);
   const [deleteDialog, setDeleteDialog] = useState("");
+  const submit = useSubmit()
+  const fetchers = useFetchers()
+
+  let optimisticCats = fetchers.reduce((memo, f) => {
+    if (f.formData && f.formData.get('intent')=="add-cat") {
+      let data = Object.fromEntries(f.formData)
+
+      if (!categories.map((e) => e.id).includes(data.id)) {
+        memo.push(data);
+      }
+    }
+
+    if (f.formData && f.formData.get('action')=="delete-cat") {
+      console.log("delete optimistic")
+      let data = Object.fromEntries(f.formData)
+
+        categories = categories.filter((cat)=> cat.id !== data.id)
+        
+        
+    }
+
+   return memo;
+ }, []);
+
+let cats = [...categories,...optimisticCats]
 
   return (
     <div className="w-60  absolute left-1/2 translate-x-[-50%] bg-slate-400 p-3 rounded-xl z-50">
-      <Form method="POST" className="flex flex-col gap-2">
+      <Form
+        method="POST"
+        onSubmit={(e) => {
+          e.preventDefault();
+          let formData = new FormData(e.currentTarget);
+          let data = Object.fromEntries(formData);
+          submit(
+            { ...data, intent: "add-cat", id: window.crypto.randomUUID() },
+            { navigate: false, method: "post" }
+          );
+        }}
+        className="flex flex-col gap-2"
+      >
+        <input type="hidden" name="action" value={"add-cat"} />
         <input
           type="text"
           name="category_name"
@@ -36,7 +74,7 @@ const CategoryForm = () => {
       </Form>
       <ul className="mt-2">
         <h1 className="text-center font-semibold text-black">Categories</h1>
-        {categories?.map((category: Category) => (
+        {cats?.map((category: Category) => (
           <li className="p-2 bg-slate-100 flex flex-col  mt-2 rounded-xl">
             <div className="flex justify-around items-center">
               <span>{category.display_name}</span>
@@ -54,7 +92,15 @@ const CategoryForm = () => {
                   deleted !!!
                 </p>
                 <div className="flex justify-around"></div>
-                <Form method="POST">
+                <Form method="POST"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  let formData = new FormData(e.currentTarget);
+                  let id = formData.get('id')
+                  //  Todos =  Todos.filter((todo)=> todo.id !== id)
+    
+                  submit({id, action: "delete-cat"}, { navigate: false, method: "post" });
+                }}>
                   <input name="id" value={category.id} type="hidden" />
                   <button
                     name="action"
