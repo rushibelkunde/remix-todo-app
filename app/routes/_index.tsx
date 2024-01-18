@@ -107,7 +107,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
 
 // Action Function
 export const action: ActionFunction = async ({ request }) => {
-  await new Promise((resolve)=> setTimeout(resolve,3000))
+  // await new Promise((resolve)=> setTimeout(resolve,3000))
   const form = await request.formData();
   console.log(form)
   const action = form.get("action");
