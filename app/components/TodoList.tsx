@@ -1,4 +1,4 @@
-import { useLoaderData } from "@remix-run/react";
+import { redirect, useLoaderData, useLocation, useSubmit } from "@remix-run/react";
 import TodoItem from "./TodoItem";
 import React, { useState, useTransition } from "react";
 import { useSearchParams } from "@remix-run/react";
@@ -7,13 +7,18 @@ import { Form } from "@remix-run/react";
 import { useFetchers } from "@remix-run/react";
 
 const TodoList = () => {
+  const submit = useSubmit()
   const fetchers = useFetchers()
+  // const location = useLocation()
+  // console.log(location.search)
   const transition = useTransition()
   console.log("fetchers",fetchers)
   const [searchParams, setSearchParams] = useSearchParams();
   const [showSubtodo, setShowSubtodo] = useState('')
 
   let { categories, todos, pages }: any = useLoaderData();
+
+  // const [page, setPage] = useState('0')
 
   
   const [search, setSearch] = useState("");
@@ -80,6 +85,7 @@ const TodoList = () => {
         )}
         <button
           onClick={() => {
+            
             const params = new URLSearchParams();
             params.append(
               "cat",
@@ -105,7 +111,8 @@ const TodoList = () => {
           name="category"
           className="m-auto"
           id=""
-          value={searchParams.get("cat") as string}
+          // value={searchParams.get("cat") as string}
+
           onChange={(e) => {
             const params = new URLSearchParams();
             params.append("page", "0");
@@ -113,6 +120,7 @@ const TodoList = () => {
             setSearchParams(params, {
               preventScrollReset: false,
             });
+            // submit({cat:e.target.value, page},{method:"get"})
           }}
         >
           <option value="all">all</option>
@@ -120,6 +128,9 @@ const TodoList = () => {
             <option value={category.id}>{category.display_name}</option>
           ))}
         </select>
+
+        
+
         {Todos?.map((todo: Todo) => (
           <TodoItem
             key={todo.id}
@@ -145,6 +156,7 @@ const TodoList = () => {
               setSearchParams(params, {
                 preventScrollReset: true,
               });
+
             }}
           >
             {index + 1}

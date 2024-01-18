@@ -1,19 +1,27 @@
-import { PrismaClient } from '@prisma/client'
+import { PrismaClient } from '@prisma/client';
 
-let db: PrismaClient
-declare global {
-  var __db: PrismaClient | undefined
-}
+let db: PrismaClient;
 
 if (process.env.NODE_ENV === 'production') {
-  db = new PrismaClient()
-  db.$connect()
+  db = new PrismaClient();
+  // Connect in production with error handling
+  db.$connect().catch((error) => {
+    console.error('Error connecting to Prisma client:', error);
+    process.exit(1); // Exit the process in case of connection failure
+  });
 } else {
-  if (!global.__db) {
-    global.__db = new PrismaClient()
-    global.__db.$connect()
-  }
-  db = global.__db
+  // In development, create a new Prisma client for each request
+  db = new PrismaClient();
+  // Connect in development with error handling
+  db.$connect().catch((error) => {
+    console.error('Error connecting to Prisma client:', error);
+    process.exit(1); // Exit the process in case of connection failure
+  });
 }
 
-export { db }
+// Ensure to disconnect the Prisma client when the application shuts down
+process.on('beforeExit', async () => {
+  await db.$disconnect();
+});
+
+export { db };

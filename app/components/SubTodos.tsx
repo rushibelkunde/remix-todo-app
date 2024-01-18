@@ -19,8 +19,8 @@ const SubTodos = ({ todoId }: { todoId: String }) => {
 
   let optimisticSubTodos = fetchers.reduce((memo, f) => {
     if (f.formData && f.formData.get("action") == "add-subtodo") {
-      let data = Object.fromEntries(f.formData);
-      if (!subTodos.map((e) => e.id).includes(data.id)) {
+      let data : any = Object.fromEntries(f.formData);
+      if (!subTodos?.map((e) => e.id).includes(data.id)) {
         data.completed = false
         memo.push(data);
       }
@@ -28,14 +28,21 @@ const SubTodos = ({ todoId }: { todoId: String }) => {
     if (f.formData && f.formData.get("action") == "delete-subtodo") {
       console.log("delete optimistic");
       let data = Object.fromEntries(f.formData);
-      subTodos = subTodos.filter((todo) => todo.id !== data.id);
+      subTodos = subTodos?.filter((todo) => todo.id !== data.id);
     }
     return memo;
   }, []);
 
+
+
+  
+
   if(subTodos){
-    subTodos = [...subTodos  , ...optimisticSubTodos];
+     subTodos = [...optimisticSubTodos, ...subTodos];
   }
+
+
+  
 
   
 
@@ -49,7 +56,7 @@ const SubTodos = ({ todoId }: { todoId: String }) => {
           let data = Object.fromEntries(formData);
           e.currentTarget.reset();
           submit(
-            { ...data, action: "add-subtodo", id: window.crypto.randomUUID() },
+            { ...data, completed: "false" ,action: "add-subtodo", id: window.crypto.randomUUID() },
             { navigate: false, method: "post" }
           );
         }}
@@ -61,11 +68,9 @@ const SubTodos = ({ todoId }: { todoId: String }) => {
             className="p-1 bg-slate-100 rounded-xl"
             placeholder="add subtodo.."
           />
-          <input type="hidden" name="todoId" value={todoId as string} />
+          <input type="hidden" name="todo_id" value={todoId as string} />
           <button
             type="submit"
-            name="action"
-            value={"add-subtodo"}
             className="bg-black text-white p-2 rounded-xl"
           >
             Add
@@ -75,7 +80,7 @@ const SubTodos = ({ todoId }: { todoId: String }) => {
 
       <h1 className="text-center font-semibold mt-2">SubTodos</h1>
       <ul className="flex flex-col items-center mt-2 gap-2">
-        {subTodos?.filter((subTodo: SubTodo) => subTodo.todo_id == todoId)
+        {subTodos?.filter((subTodo: SubTodo) => subTodo.todo_id== todoId)
         .map((subTodo: SubTodo) => (
           <li
             key={subTodo.id}

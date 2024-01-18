@@ -106,7 +106,7 @@ const TodoItem = ({
         <span className="text-sm font-normal">
           {todo.created_at
             ? new Date(todo.created_at).toISOString().substring(0, 10)
-            : ""}
+            : new Date().toISOString().substring(0,10)}
         </span>
 
         {deleteDialog ? (
