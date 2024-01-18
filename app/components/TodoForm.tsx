@@ -21,7 +21,7 @@ const TodoForm = () => {
                  let data = Object.fromEntries(formData)
                  e.currentTarget.reset()
           submit(
-                     { ...data,intent: "add-todo" ,id: window.crypto.randomUUID() },
+                     { ...data, completed: "false",intent: "add-todo" ,id: window.crypto.randomUUID() },
                     { navigate: false, method: "post"}
                   );
         

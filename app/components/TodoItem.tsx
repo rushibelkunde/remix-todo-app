@@ -23,6 +23,8 @@ const TodoItem = ({
 }) => {
   const submit = useSubmit();
 
+  const navigate = useNavigate()
+
   const [searchParams, setSearchParams] = useSearchParams();
 
   const [onEdit, setOnEdit] = useState(false);
@@ -160,6 +162,7 @@ const TodoItem = ({
         {searchParams.get("todoId") == todo.id ? (
           <button
             onClick={() => {
+              setShowSubtodo('')
               const params = new URLSearchParams();
               params.append("cat", searchParams.get("cat") as string);
               params.append("page", searchParams.get("page") as string);
@@ -175,6 +178,7 @@ const TodoItem = ({
         ) : (
           <button
             onClick={() => {
+              setShowSubtodo(todo.id)
               const params = new URLSearchParams();
               params.append(
                 "cat",
@@ -188,6 +192,7 @@ const TodoItem = ({
               setSearchParams(params, {
                 preventScrollReset: true,
               });
+              
             }}
             className="font-bold hover:scale-[2] duration-100 transition-all ease-linear"
           >
@@ -196,7 +201,7 @@ const TodoItem = ({
         )}
       </li>
       <div>
-        {searchParams.get("todoId") === todo.id ? (
+        {showSubtodo=== todo.id ? (
           <SubTodos todoId={todo.id} />
         ) : (
           ""

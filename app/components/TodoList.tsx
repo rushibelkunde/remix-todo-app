@@ -23,6 +23,7 @@ const TodoList = () => {
           let data = Object.fromEntries(f.formData)
     
           if (!todos.map((e) => e.id).includes(data.id)) {
+            data.completed = false
             memo.push(data);
           }
         }

@@ -107,6 +107,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
 
 // Action Function
 export const action: ActionFunction = async ({ request }) => {
+  await new Promise((resolve)=> setTimeout(resolve,500))
   const form = await request.formData();
   console.log(form)
   const action = form.get("action");
@@ -178,9 +179,10 @@ export const action: ActionFunction = async ({ request }) => {
     case "add-subtodo": {
       return await db.subTodo.create({
         data: {
+          id: form.get('id'),
           user_id: user.uid,
           todo_id: form.get("todoId") as string,
-          title: form.get("subTodo") as string,
+          title: form.get("title") as string,
         },
       });
     }
@@ -188,7 +190,7 @@ export const action: ActionFunction = async ({ request }) => {
     case "delete-subtodo": {
       return await db.subTodo.delete({
         where: {
-          id: form.get("subtodoId") as string,
+          id: form.get("id") as string,
         },
       });
     }

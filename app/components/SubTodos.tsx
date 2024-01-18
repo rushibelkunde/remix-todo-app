@@ -1,5 +1,10 @@
 import React, { useState } from "react";
-import { Form, useActionData, useLoaderData } from "@remix-run/react";
+import {
+  Form,
+  useActionData,
+  useFetchers,
+  useLoaderData,
+} from "@remix-run/react";
 import { useSubmit } from "@remix-run/react";
 
 import type { JsonObject } from "@prisma/client/runtime/library";
@@ -8,18 +13,51 @@ import type { SubTodo } from "@prisma/client";
 
 const SubTodos = ({ todoId }: { todoId: String }) => {
   const [onEdit, setOnEdit] = useState("");
-
-
-  const { subTodos }: { subTodos: any[] } = useLoaderData();
+  let { subTodos }: { subTodos: any[] } = useLoaderData();
   const submit = useSubmit();
+  const fetchers = useFetchers();
+
+  let optimisticSubTodos = fetchers.reduce((memo, f) => {
+    if (f.formData && f.formData.get("action") == "add-subtodo") {
+      let data = Object.fromEntries(f.formData);
+      if (!subTodos.map((e) => e.id).includes(data.id)) {
+        data.completed = false
+        memo.push(data);
+      }
+    }
+    if (f.formData && f.formData.get("action") == "delete-subtodo") {
+      console.log("delete optimistic");
+      let data = Object.fromEntries(f.formData);
+      subTodos = subTodos.filter((todo) => todo.id !== data.id);
+    }
+    return memo;
+  }, []);
+
+  if(subTodos){
+    subTodos = [...subTodos  , ...optimisticSubTodos];
+  }
+
+  
 
   return (
     <div className=" min-w-80 bg-slate-300 rounded-xl p-2 ">
-      <Form method="POST">
+      <Form
+        method="POST"
+        onSubmit={(e) => {
+          e.preventDefault();
+          let formData = new FormData(e.currentTarget);
+          let data = Object.fromEntries(formData);
+          e.currentTarget.reset();
+          submit(
+            { ...data, action: "add-subtodo", id: window.crypto.randomUUID() },
+            { navigate: false, method: "post" }
+          );
+        }}
+      >
         <div className="flex gap-2 justify-center ">
           <input
             type="text"
-            name="subTodo"
+            name="title"
             className="p-1 bg-slate-100 rounded-xl"
             placeholder="add subtodo.."
           />
@@ -37,7 +75,8 @@ const SubTodos = ({ todoId }: { todoId: String }) => {
 
       <h1 className="text-center font-semibold mt-2">SubTodos</h1>
       <ul className="flex flex-col items-center mt-2 gap-2">
-        {subTodos?.map((subTodo: SubTodo) => (
+        {subTodos?.filter((subTodo: SubTodo) => subTodo.todo_id == todoId)
+        .map((subTodo: SubTodo) => (
           <li
             key={subTodo.id}
             className={`${
@@ -117,8 +156,21 @@ const SubTodos = ({ todoId }: { todoId: String }) => {
                 </button>
               </>
             )}
-            <Form method="POST">
-              <input type="hidden" name="subtodoId" value={subTodo.id} />
+            <Form
+              method="POST"
+              onSubmit={(e) => {
+                e.preventDefault();
+                let formData = new FormData(e.currentTarget);
+                let id = formData.get("id");
+                //  Todos =  Todos.filter((todo)=> todo.id !== id)
+
+                submit(
+                  { id, action: "delete-subtodo" },
+                  { navigate: false, method: "post" }
+                );
+              }}
+            >
+              <input type="hidden" name="id" value={subTodo.id} />
               <button name="action" value={"delete-subtodo"}>
                 <img
                   src="delete.png"
@@ -131,7 +183,7 @@ const SubTodos = ({ todoId }: { todoId: String }) => {
           </li>
         ))}
       </ul>
-      {/* {loading? 
+      {!subTodos?.filter((subTodo: SubTodo) => subTodo.todo_id == todoId)? 
          <div role="status" className='mt-3 m-auto'>
          <svg aria-hidden="true" className="m-auto w-10 h-10 text-gray-200 animate-spin dark:text-gray-600 fill-blue-600" viewBox="0 0 100 101" fill="none" xmlns="http://www.w3.org/2000/svg">
            <path d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.08144 50.5908C9.08144 73.1895 27.4013 91.5094 50 91.5094C72.5987 91.5094 90.9186 73.1895 90.9186 50.5908C90.9186 27.9921 72.5987 9.67226 50 9.67226C27.4013 9.67226 9.08144 27.9921 9.08144 50.5908Z" fill="currentColor" />
@@ -139,7 +191,7 @@ const SubTodos = ({ todoId }: { todoId: String }) => {
          </svg>
          <span className="sr-only">Loading...</span>
        </div> :
-       ""} */}
+       ""}
     </div>
   );
 };
