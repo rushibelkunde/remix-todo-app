@@ -1,21 +1,24 @@
 import { useFetchers, useLoaderData, useSubmit } from "@remix-run/react";
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import { Form } from "@remix-run/react";
 import type { Category } from "@prisma/client";
+import { loader } from "~/routes/_index";
 
 const CategoryForm = () => {
-  let { categories }: any = useLoaderData();
+  let { categories }  = useLoaderData<typeof loader>();
   console.log("categories", categories);
   const [deleteDialog, setDeleteDialog] = useState("");
   const submit = useSubmit()
   const fetchers = useFetchers()
 
-  let optimisticCats = fetchers.reduce((memo, f) => {
+  const dialogRef = useRef(null)
+
+  let optimisticCats = fetchers.reduce((memo : Array<Category>, f) => {
     if (f.formData && f.formData.get('intent')=="add-cat") {
       let data = Object.fromEntries(f.formData)
 
-      if (!categories.map((e) => e.id).includes(data.id)) {
-        memo.push(data);
+      if (!categories.map((e) => e.id).includes(data.id as string)) {
+        memo.push(data as Category);
       }
     }
 
@@ -35,6 +38,7 @@ let cats = [...categories,...optimisticCats]
 
   return (
     <div className="w-60  absolute left-1/2 translate-x-[-50%] bg-slate-400 p-3 rounded-xl z-50">
+    
       <Form
         method="POST"
         onSubmit={(e) => {
@@ -96,7 +100,7 @@ let cats = [...categories,...optimisticCats]
                 onSubmit={(e) => {
                   e.preventDefault();
                   let formData = new FormData(e.currentTarget);
-                  let id = formData.get('id')
+                  let id = formData.get('id') as string
                   //  Todos =  Todos.filter((todo)=> todo.id !== id)
     
                   submit({id, action: "delete-cat"}, { navigate: false, method: "post" });
@@ -133,6 +137,8 @@ let cats = [...categories,...optimisticCats]
        </div> :
        ""} */}
       </ul>
+
+      
     </div>
   );
 };

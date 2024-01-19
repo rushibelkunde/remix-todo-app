@@ -1,14 +1,14 @@
 import type { MetaFunction } from "@remix-run/node";
 
 import { authenticator } from "~/utils/auth.server";
-import { Form, useFetchers, useLoaderData, useSearchParams } from "@remix-run/react";
+import { Form, Outlet, useFetchers, useLoaderData, useSearchParams } from "@remix-run/react";
 import { ActionFunction, json, redirect } from "@remix-run/node";
 import { LoaderFunctionArgs } from "@remix-run/node";
 import TodoForm from "~/components/TodoForm";
 import { useEffect, useState } from "react";
 import { db } from "~/utils/db.server";
 import TodoList from "~/components/TodoList";
-import type { Todo } from "@prisma/client";
+import type { SubTodo, Todo } from "@prisma/client";
 import CategoryForm from "~/components/CategoryForm";
 import { User } from "@prisma/client";
 
@@ -69,40 +69,21 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
     take: 5,
   });
 
-  let subTodos;
 
-  if (searchParams.get("todoId")) {
-    subTodos = await db.subTodo.findMany({
+  let allSubTodos : Array<{todoId : string, subtodos: SubTodo[]}>=[];
+
+  todos.map(async(todo: Todo)=>{
+    let subtodos = await db.subTodo.findMany({
       where: {
-        todo_id: searchParams.get("todoId") as string,
+        todo_id: todo.id
       },
     });
-
-    const index = subTodos.findIndex(({ completed }) => completed == false);
-    if (index == -1 && subTodos.length > 0) {
-      await db.todo.update({
-        where: {
-          id: searchParams.get("todoId") as string,
-        },
-        data: {
-          completed: true,
-        },
-      });
-    } else {
-      await db.todo.update({
-        where: {
-          id: searchParams.get("todoId") as string,
-        },
-        data: {
-          completed: false,
-        },
-      });
-    }
-  }
+    allSubTodos.push({todoId : todo.id, subtodos})
+  })
 
   const pages = Math.ceil((await db.todo.findMany()).length / 5);
 
-  return json({ user, categories, todos, subTodos, pages });
+  return json({ user, categories, todos, pages , allSubTodos});
 };
 
 // Action Function
@@ -129,7 +110,7 @@ export const action: ActionFunction = async ({ request }) => {
     case "add-cat": {
       return await db.category.create({
         data: {
-          id: form.get('id'),
+          id: form.get('id') as string,
           user_id: user.uid as string,
           category_name: form.get("category_name") as any,
           display_name: form.get("display_name") as any,
@@ -168,10 +149,10 @@ export const action: ActionFunction = async ({ request }) => {
     case "edit-todo": {
       return await db.todo.update({
         where: {
-          id: form.get("todoId"),
+          id: form.get("todoId") as string,
         },
         data: {
-          title: form.get("title"),
+          title: form.get("title") as string,
         },
       });
     }
@@ -180,7 +161,7 @@ export const action: ActionFunction = async ({ request }) => {
       console.log("added")
       return await db.subTodo.create({
         data: {
-          id: form.get('id'),
+          id: form.get('id') as string,
           user_id: user.uid,
           todo_id: form.get("todo_id") as string,
           title: form.get("title") as string,
@@ -217,16 +198,43 @@ export const action: ActionFunction = async ({ request }) => {
           completed: !JSON.parse(form.get("completed") as string),
         },
       });
+
+      const subTodos = await db.subTodo.findMany({
+        where:{
+          todo_id: todo.todo_id
+        }
+      })
+
+    const index = subTodos.findIndex(({ completed }) => completed == false);
+    if (index == -1 && subTodos.length > 0) {
+      await db.todo.update({
+        where: {
+          id: todo.todo_id
+        },
+        data: {
+          completed: true,
+        },
+      });
+    } else {
+      await db.todo.update({
+        where: {
+          id: todo.todo_id
+        },
+        data: {
+          completed: false,
+        },
+      });
+    }
       return todo;
     }
 
     case "edit-subtodo": {
       return await db.subTodo.update({
         where: {
-          id: form.get("subtodoId"),
+          id: form.get("subtodoId") as string,
         },
         data: {
-          title: form.get("title"),
+          title: form.get("title") as string,
         },
       });
     }
@@ -254,6 +262,9 @@ export const action: ActionFunction = async ({ request }) => {
 };
 
 export default function Index() {
+
+  
+  
   const [showCategory, setShowCategory] = useState(false);
   const user: any = useLoaderData();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -289,12 +300,13 @@ export default function Index() {
         </button>
       </div>
       <div className="">
-        {showCategory ? <CategoryForm user={user} /> : ""}
-        <TodoForm user={user} />
+        {showCategory ? <CategoryForm/> : ""}
+        <TodoForm  />
         <TodoList />
       </div>
 
       {/* <TodoList user={user} /> */}
+      <Outlet/>
     </div>
   );
 }

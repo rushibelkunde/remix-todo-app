@@ -1,35 +1,28 @@
-import React, { useRef, useState } from "react";
-import SubTodos from "./SubTodos";
+import React, { Ref, useRef, useState } from "react";
+import SubTodoList from "./SubTodos";
 import {
   Form,
-  useActionData,
-  useNavigate,
   useNavigation,
 } from "@remix-run/react";
 import { useSearchParams } from "@remix-run/react";
 import { useSubmit } from "@remix-run/react";
 import type { Todo } from "@prisma/client";
-import { Link } from "@remix-run/react";
 
 const TodoItem = ({
   todo,
   currentPage,
   showSubtodo,
   setShowSubtodo,
-  Todos
 }: {
   todo: Todo;
   currentPage: number;
+  showSubtodo: string;
+  setShowSubtodo: Function;
 }) => {
   const submit = useSubmit();
 
-  const navigate = useNavigate()
-
   const [searchParams, setSearchParams] = useSearchParams();
-
   const [onEdit, setOnEdit] = useState(false);
-  const buttonRef = useRef()
-
   const [deleteDialog, setDeleteDialog] = useState(false);
   const navigation = useNavigation();
   return (
@@ -48,12 +41,12 @@ const TodoItem = ({
             type="submit"
             name="action"
             value="toggle-todo"
-            className="ml-3"
             onChange={(e) => {
-              e.preventDefault();
-              submit(e.currentTarget, { replace: true });
+              submit(e.currentTarget, { navigate: false, method: "POST" });
             }}
+            className="ml-3"
           >
+            <input type="hidden" name="id" value={todo.id} />
             <input type="checkbox" name="" id="" checked={todo.completed} />
           </button>
         </Form>
@@ -68,6 +61,7 @@ const TodoItem = ({
                 placeholder={todo.title}
               />
               <input type="hidden" name="todoId" value={todo.id} />
+              <input type="hidden" name="completed" value={`${todo.completed}`} />
               <button
                 type="submit"
                 name="action"
@@ -76,7 +70,7 @@ const TodoItem = ({
                 onClick={(e) => {
                   e.preventDefault();
                   setOnEdit(false);
-                  submit(e.currentTarget);
+                  submit(e.currentTarget , {navigate:false, method:"post"});
                 }}
               >
                 save
@@ -106,7 +100,7 @@ const TodoItem = ({
         <span className="text-sm font-normal">
           {todo.created_at
             ? new Date(todo.created_at).toISOString().substring(0, 10)
-            : new Date().toISOString().substring(0,10)}
+            : new Date().toISOString().substring(0, 10)}
         </span>
 
         {deleteDialog ? (
@@ -115,20 +109,28 @@ const TodoItem = ({
             onSubmit={(e) => {
               e.preventDefault();
               let formData = new FormData(e.currentTarget);
-              let id = formData.get('todoId')
+              let id = formData.get("todoId") as string;
               //  Todos =  Todos.filter((todo)=> todo.id !== id)
 
-              submit({id, action: "delete-todo"}, { navigate: false, method: "post" });
+              submit(
+                { id, action: "delete-todo" },
+                { navigate: false, method: "post" }
+              );
             }}
           >
             <input type="hidden" name="action" value={"delete-todo"} />
             <input type="hidden" name="todoId" value={todo.id} />
             <div className="flex flex-col justify-center gap-2">
-              <button 
-                ref={buttonRef}
+              <button
                 type="submit"
                 name="action"
                 value={"delete-todo"}
+                disabled={
+                  navigation.formData?.get("action") == "delete-todo" &&
+                  navigation.state !== "idle"
+                    ? true
+                    : false
+                }
                 className="bg-red-600 text-white rounded-xl p-2"
               >
                 {navigation.formData?.get("action") == "delete-todo" &&
@@ -137,7 +139,7 @@ const TodoItem = ({
                   : "Delete"}
               </button>
 
-              <button 
+              <button
                 className="bg-black text-white rounded-xl p-2"
                 onClick={() => setDeleteDialog(false)}
               >
@@ -159,17 +161,17 @@ const TodoItem = ({
           </button>
         )}
 
-        {searchParams.get("todoId") == todo.id ? (
+        {showSubtodo == todo.id ? (
           <button
             onClick={() => {
-              setShowSubtodo('')
-              const params = new URLSearchParams();
-              params.append("cat", searchParams.get("cat") as string);
-              params.append("page", searchParams.get("page") as string);
-              params.delete("todoId");
-              setSearchParams(params, {
-                preventScrollReset: true,
-              });
+              setShowSubtodo("");
+              // const params = new URLSearchParams();
+              // params.append("cat", searchParams.get("cat") as string);
+              // params.append("page", searchParams.get("page") as string);
+              // params.delete("todoId");
+              // setSearchParams(params, {
+              //   preventScrollReset: true,
+              // });
             }}
             className="font-bold"
           >
@@ -178,21 +180,20 @@ const TodoItem = ({
         ) : (
           <button
             onClick={() => {
-              setShowSubtodo(todo.id)
-              const params = new URLSearchParams();
-              params.append(
-                "cat",
-                (searchParams.get("cat") as string) || "all"
-              );
-              params.append(
-                "page",
-                (searchParams.get("page") as string) || "0"
-              );
-              params.append("todoId", todo.id);
-              setSearchParams(params, {
-                preventScrollReset: true,
-              });
-              
+              setShowSubtodo(todo.id);
+              // const params = new URLSearchParams();
+              // params.append(
+              //   "cat",
+              //   (searchParams.get("cat") as string) || "all"
+              // );
+              // params.append(
+              //   "page",
+              //   (searchParams.get("page") as string) || "0"
+              // );
+              // params.append("todoId", todo.id);
+              // setSearchParams(params, {
+              //   preventScrollReset: true,
+              // });
             }}
             className="font-bold hover:scale-[2] duration-100 transition-all ease-linear"
           >
@@ -201,11 +202,7 @@ const TodoItem = ({
         )}
       </li>
       <div>
-        {showSubtodo=== todo.id ? (
-          <SubTodos todoId={todo.id} />
-        ) : (
-          ""
-        )}
+        {showSubtodo === todo.id ? <SubTodoList todoId={todo.id} /> : ""}
       </div>
     </>
   );

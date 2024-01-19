@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from "react";
-import { Link } from "@remix-run/react";
+import { Link, useLoaderData } from "@remix-run/react";
 
 import { LoaderFunctionArgs } from "@remix-run/node";
 import { authenticator } from "~/utils/auth.server";
 import { ActionFunction } from "@remix-run/node";
 import { useActionData } from "@remix-run/react";
+import { useSubmit } from "@remix-run/react";
 
 import {
   isRouteErrorResponse,
@@ -57,7 +58,7 @@ export const action: ActionFunction = async ({ request }) => {
 
 const Login = () => {
   const data = useActionData();
-
+  
   console.log(data);
 
   const [loading, setLoading] = useState(false);

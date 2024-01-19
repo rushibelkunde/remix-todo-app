@@ -7,12 +7,9 @@ import { Form } from "@remix-run/react";
 import { useFetchers } from "@remix-run/react";
 
 const TodoList = () => {
-  const submit = useSubmit()
   const fetchers = useFetchers()
   // const location = useLocation()
   // console.log(location.search)
-  const transition = useTransition()
-  console.log("fetchers",fetchers)
   const [searchParams, setSearchParams] = useSearchParams();
   const [showSubtodo, setShowSubtodo] = useState('')
 
@@ -23,34 +20,53 @@ const TodoList = () => {
   
   const [search, setSearch] = useState("");
 
-  let optimisticTodos = fetchers.reduce((memo, f) => {
+  let optimisticTodos = fetchers.reduce((memo: Array<Todo>, f) => {
         if (f.formData && f.formData.get('intent')=="add-todo") {
-          let data = Object.fromEntries(f.formData)
+          let data : any= Object.fromEntries(f.formData)
     
-          if (!todos.map((e) => e.id).includes(data.id)) {
+          if (!todos.map((todo:Todo) => todo.id).includes(data.id)) {
             data.completed = false
             memo.push(data);
           }
         }
         if (f.formData && f.formData.get('action')=="delete-todo") {
-          console.log("delete optimistic")
           let data = Object.fromEntries(f.formData)
-
-            todos = todos.filter((todo)=> todo.id !== data.id)
+            todos = todos.filter((todo : Todo)=> todo.id !== data.id)
             console.log(todos)
             
         }
+       
+        if (f.formData && f.formData.get('action')=="toggle-todo") {
+          let data = Object.fromEntries(f.formData)
+            todos = todos.map((todo: Todo)=> {
+              if(todo.id == data.todoId){
+                todo.completed = !JSON.parse(data.completed as string)
+                return todo
+              }
+              else{
+                return todo
+              }
+             })
+            
+        }
+
+        // if (f.formData && f.formData.get('action')=="edit-todo") {
+        //   console.log("edit optimistic")
+        //   let data = Object.fromEntries(f.formData)
+        //     todos = todos.map((todo: Todo)=> {
+        //       if(todo.id == data.todoId){
+        //         todo.title = data.title
+        //       }
+        //       else{
+        //         return todo
+        //       }
+        //      })
+            
+        // }
 
     
        return memo;
      }, []);
-
-    //  if (f.formData && f.formData.get('action')=="delete-todo") {
-    //   let data = Object.fromEntries(f.formData)
-
-    //     todos = todos.filter((todo)=> todo.id == data.id)
-        
-    // }
 
     
 
@@ -89,11 +105,11 @@ const TodoList = () => {
             const params = new URLSearchParams();
             params.append(
               "cat",
-              searchParams.get("cat") ? searchParams.get("cat") : "all"
+              searchParams.get("cat") ? searchParams.get("cat") as string : "all"
             );
             params.append(
               "page",
-              searchParams.get("page") ? searchParams.get("page") : "0"
+              searchParams.get("page") ? searchParams.get("page") as string : "0"
             );
             params.append("search", search);
             setSearchParams(params, {
@@ -133,12 +149,11 @@ const TodoList = () => {
 
         {Todos?.map((todo: Todo) => (
           <TodoItem
-            key={todo.id}
+            // key={todo.id}
             todo={todo}
             showSubtodo={showSubtodo}
             setShowSubtodo={setShowSubtodo}
-            currentPage={searchParams.get("page") as string}
-            Todos = {Todos}
+            currentPage={parseInt(searchParams.get("page") as string)}
           />
         ))}
       </ul>
@@ -150,7 +165,7 @@ const TodoList = () => {
               const params = new URLSearchParams();
               params.append(
                 "cat",
-                searchParams.get("cat") ? searchParams.get("cat") : "all"
+                searchParams.get("cat") ? searchParams.get("cat") as string : "all"
               );
               params.append("page", `${index}`);
               setSearchParams(params, {
