@@ -71,7 +71,7 @@ const TodoList = () => {
       console.log("status optimistic")
       let data = Object.fromEntries(f.formData)
         todos = todos.map((todo: Todo)=> {
-          if(todo.id == data.todoId){
+          if(todo.id == data.id){
             todo.status = String(data.status)
             return todo
           }
