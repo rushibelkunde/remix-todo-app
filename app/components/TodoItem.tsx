@@ -77,6 +77,7 @@ const TodoItem = ({
                 placeholder={todo.title}
               />
               <input type="hidden" name="todoId" value={todo.id} />
+              <input type="hidden" name="status" value={todo.status} />
               <input
                 type="hidden"
                 name="completed"

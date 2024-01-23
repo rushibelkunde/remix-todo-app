@@ -23,6 +23,7 @@ const TodoForm = () => {
             {
               ...data,
               completed: "false",
+              status: "IN_PROGRESS",
               intent: "add-todo",
               id: window.crypto.randomUUID(),
             },

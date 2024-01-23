@@ -47,6 +47,33 @@ const SubTodoList = ({ todoId }: { todoId: string }) => {
         }
       });
     }
+    if ( f.formData?.get('action')=="edit-subtodo") {
+      console.log("edit optimistic")
+      let data = Object.fromEntries(f.formData)
+        subTodos = subTodos?.map((todo)=> {
+          if(todo.id == data.id){
+            todo.title = data.title as string
+            return todo
+          }
+          else{
+            return todo
+          }
+         })
+    }
+
+    if ( f.formData?.get('action')=="change-status-subtodo") {
+      console.log("status optimistic")
+      let data = Object.fromEntries(f.formData)
+        subTodos = subTodos?.map((todo)=> {
+          if(todo.id == data.id){
+            todo.status = data.status as any
+            return todo
+          }
+          else{
+            return todo
+          }
+         })
+    }
     return memo;
   }, []);
 

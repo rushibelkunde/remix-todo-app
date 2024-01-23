@@ -27,7 +27,7 @@ const TodoList = () => {
   const [search, setSearch] = useState("");
 
   let optimisticTodos = fetchers.reduce((memo: Array<Todo>, f) => {
-    if (f.formData && f.formData.get("intent") == "add-todo") {
+    if (f.formData?.get("intent") == "add-todo") {
       let data: any = Object.fromEntries(f.formData);
 
       if (!todos.map((todo: Todo) => todo.id).includes(data.id)) {
@@ -35,13 +35,13 @@ const TodoList = () => {
         memo.push(data);
       }
     }
-    if (f.formData && f.formData.get("action") == "delete-todo") {
+    if (f.formData?.get("action") == "delete-todo") {
       let data = Object.fromEntries(f.formData);
       todos = todos.filter((todo: Todo) => todo.id !== data.id);
       console.log(todos);
     }
 
-    if (f.formData && f.formData.get("action") == "toggle-todo") {
+    if (f.formData?.get("action") == "toggle-todo") {
       let data = Object.fromEntries(f.formData);
       todos = todos.map((todo: Todo) => {
         if (todo.id == data.todoId) {
@@ -53,19 +53,33 @@ const TodoList = () => {
       });
     }
 
-    // if (f.formData && f.formData.get('action')=="edit-todo") {
-    //   console.log("edit optimistic")
-    //   let data = Object.fromEntries(f.formData)
-    //     todos = todos.map((todo: Todo)=> {
-    //       if(todo.id == data.todoId){
-    //         todo.title = data.title
-    //       }
-    //       else{
-    //         return todo
-    //       }
-    //      })
+    if ( f.formData?.get('action')=="edit-todo") {
+      console.log("edit optimistic")
+      let data = Object.fromEntries(f.formData)
+        todos = todos.map((todo: Todo)=> {
+          if(todo.id == data.todoId){
+            todo.title = data.title as string
+            return todo
+          }
+          else{
+            return todo
+          }
+         })
+    }
 
-    // }
+    if ( f.formData?.get('action')=="change-status") {
+      console.log("status optimistic")
+      let data = Object.fromEntries(f.formData)
+        todos = todos.map((todo: Todo)=> {
+          if(todo.id == data.todoId){
+            todo.status = String(data.status)
+            return todo
+          }
+          else{
+            return todo
+          }
+         })
+    }
 
     return memo;
   }, []);
