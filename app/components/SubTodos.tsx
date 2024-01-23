@@ -129,7 +129,7 @@ const SubTodoList = ({ todoId }: { todoId: string }) => {
                   : subTodo.status == "COMPLETED"
                   ? "bg-green-200"
                   : "bg-red-200"
-              } p-2 flex gap-2 w-60 justify-around rounded-xl items-center`}
+              } p-2 flex gap-2 min-w-64 justify-around rounded-xl items-center`}
             >
               <Form method="POST">
                 <input type="hidden" name="subTodoId" value={subTodo.id} />
