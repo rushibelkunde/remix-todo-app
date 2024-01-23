@@ -1,37 +1,35 @@
 import { Authenticator, AuthorizationError } from "remix-auth";
 import { sessionStorage } from "./session.server";
 import { FormStrategy } from "remix-auth-form";
-import bcrypt from 'bcryptjs'
+import bcrypt from "bcryptjs";
 import { db } from "./db.server";
 
+const authenticator = new Authenticator(sessionStorage);
 
-const authenticator = new Authenticator(sessionStorage)
+const formStrategy = new FormStrategy(async ({ form }) => {
+  const name = form.get("name");
+  const username = form.get("username");
+  const pass = form.get("password");
 
-const formStrategy = new FormStrategy(async ({form})=>{
+  const user = await db.user.findUnique({
+    where: {
+      username: username as string,
+    },
+  });
 
-    const name = form.get('name')
-    const username = form.get('username')
-    const pass = form.get('password')
+  if (!user) {
+    throw new AuthorizationError("user don't exist");
+  }
+  const passwordMatch = await bcrypt.compare(
+    pass as string,
+    user.pass as string
+  );
 
-    const user = await db.user.findUnique({
-        where:{
-            username : username as string
-        }
-    })
+  if (!passwordMatch) throw new AuthorizationError("invalid credentials");
 
-    if(!user){
-        throw new AuthorizationError("user don't exist")
+  return user;
+});
 
-    }
-    const passwordMatch = await bcrypt.compare(pass as string, user.pass as string)
+authenticator.use(formStrategy, "form");
 
-    if(!passwordMatch) throw new AuthorizationError("invalid credentials")
-
-    return user
-
-})
-
-authenticator.use(formStrategy, 'form')
-
-export {authenticator}
-
+export { authenticator };

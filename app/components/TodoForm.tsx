@@ -7,26 +7,28 @@ const TodoForm = () => {
   const [category, setCategory] = useState("");
   const { categories }: { categories: any[] } = useLoaderData();
 
-  const navigation = useNavigation()
+  const navigation = useNavigation();
 
-  const submit = useSubmit()
+  const submit = useSubmit();
 
   return (
     <div>
       <Form
-
-        onSubmit={ (e) => {
+        onSubmit={(e) => {
           e.preventDefault();
-                 let formData = new FormData(e.currentTarget);
-                 let data = Object.fromEntries(formData)
-                 e.currentTarget.reset()
+          let formData = new FormData(e.currentTarget);
+          let data = Object.fromEntries(formData);
+          e.currentTarget.reset();
           submit(
-                     { ...data, completed: "false",intent: "add-todo" ,id: window.crypto.randomUUID() },
-                    { navigate: false, method: "post"}
-                  );
-        
-        }
-      }
+            {
+              ...data,
+              completed: "false",
+              intent: "add-todo",
+              id: window.crypto.randomUUID(),
+            },
+            { navigate: false, method: "post" }
+          );
+        }}
         method="POST"
         className="flex gap-2 w-full items-center justify-center mt-10"
       >
@@ -54,10 +56,9 @@ const TodoForm = () => {
         </select>
         <button
           type="submit"
-          className={`${ "bg-black"
-          } rounded-xl p-1 sm:p-2  text-white font-semibold`}
+          className={`${"bg-black"} rounded-xl p-1 sm:p-2  text-white font-semibold`}
         >
-         Add
+          Add
         </button>
       </Form>
 

@@ -7,10 +7,7 @@ import { ActionFunction } from "@remix-run/node";
 import { useActionData } from "@remix-run/react";
 import { useSubmit } from "@remix-run/react";
 
-import {
-  isRouteErrorResponse,
-  useRouteError,
-} from "@remix-run/react";
+import { isRouteErrorResponse, useRouteError } from "@remix-run/react";
 
 export function ErrorBoundary() {
   const error = useRouteError();
@@ -22,7 +19,9 @@ export function ErrorBoundary() {
           {error.status} {error.statusText}
         </h1>
         <p className="font-semibold text-xl">{error.data.message}</p>
-        <Link to={"/login"} className="text-semibold">try again</Link>
+        <Link to={"/login"} className="text-semibold">
+          try again
+        </Link>
       </div>
     );
   } else if (error instanceof Error) {
@@ -39,7 +38,6 @@ export function ErrorBoundary() {
   }
 }
 
-
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const user = await authenticator.isAuthenticated(request, {
     successRedirect: "/",
@@ -48,17 +46,15 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 };
 
 export const action: ActionFunction = async ({ request }) => {
-    const user =  authenticator.authenticate("form", request, {
-      successRedirect: "/",
-    });
-    return user
- 
+  const user = authenticator.authenticate("form", request, {
+    successRedirect: "/",
+  });
+  return user;
 };
-
 
 const Login = () => {
   const data = useActionData();
-  
+
   console.log(data);
 
   const [loading, setLoading] = useState(false);
@@ -118,7 +114,6 @@ const Login = () => {
           </span>
         </Link>
       </h1>
-
     </div>
   );
 };

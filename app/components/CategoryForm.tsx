@@ -5,40 +5,38 @@ import type { Category } from "@prisma/client";
 import { loader } from "~/routes/_index";
 
 const CategoryForm = () => {
-  let { categories }  = useLoaderData<typeof loader>();
+  let { categories } = useLoaderData<typeof loader>();
   console.log("categories", categories);
   const [deleteDialog, setDeleteDialog] = useState("");
-  const submit = useSubmit()
-  const fetchers = useFetchers()
+  const [onEdit, setOnEdit] = useState("");
+  const submit = useSubmit();
+  const fetchers = useFetchers();
 
-  const dialogRef = useRef(null)
+  const dialogRef = useRef(null);
 
-  let optimisticCats = fetchers.reduce((memo : Array<Category>, f) => {
-    if (f.formData && f.formData.get('intent')=="add-cat") {
-      let data = Object.fromEntries(f.formData)
+  let optimisticCats = fetchers.reduce((memo: Array<Category>, f) => {
+    if (f.formData && f.formData.get("intent") == "add-cat") {
+      let data = Object.fromEntries(f.formData);
 
       if (!categories.map((e) => e.id).includes(data.id as string)) {
         memo.push(data as Category);
       }
     }
 
-    if (f.formData && f.formData.get('action')=="delete-cat") {
-      console.log("delete optimistic")
-      let data = Object.fromEntries(f.formData)
+    if (f.formData && f.formData.get("action") == "delete-cat") {
+      console.log("delete optimistic");
+      let data = Object.fromEntries(f.formData);
 
-        categories = categories.filter((cat)=> cat.id !== data.id)
-        
-        
+      categories = categories.filter((cat) => cat.id !== data.id);
     }
 
-   return memo;
- }, []);
+    return memo;
+  }, []);
 
-let cats = [...categories,...optimisticCats]
+  let cats = [...categories, ...optimisticCats];
 
   return (
     <div className="w-60  absolute left-1/2 translate-x-[-50%] bg-slate-400 p-3 rounded-xl z-50">
-    
       <Form
         method="POST"
         onSubmit={(e) => {
@@ -81,12 +79,61 @@ let cats = [...categories,...optimisticCats]
         {cats?.map((category: Category) => (
           <li className="p-2 bg-slate-100 flex flex-col  mt-2 rounded-xl">
             <div className="flex justify-around items-center">
-              <span>{category.display_name}</span>
+              {onEdit == category.id ? (
+                <>
+                  <Form method="POST">
+                    <input
+                      type="text"
+                      name="title"
+                      className="w-[150px] p-1"
+                      placeholder={category.category_name}
+                    />
+                    <input type="hidden" name="id" value={category.id} />
+                    <button
+                      type="submit"
+                      name="action"
+                      value={"edit-category"}
+                      className="p-1 bg-blue-600 text-white"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setOnEdit("");
+                        submit(e.currentTarget, {
+                          navigate: false,
+                          method: "post",
+                        });
+                      }}
+                    >
+                      save
+                    </button>
+                    <button
+                      onClick={(e) => setOnEdit("")}
+                      className="p-1 bg-black text-white ml-2"
+                    >
+                      cancel
+                    </button>
+                  </Form>
+                </>
+              ) : (
+                <>
+                  <h1 className="font-semibold">{category.category_name}</h1>
+                  <button onClick={(e) => setOnEdit(category.id)}>
+                    <img
+                      src="edit.png"
+                      alt=""
+                      width={"20px"}
+                      className="hover:scale-150 duration-100 transition-all ease-linear"
+                    />
+                  </button>
+                </>
+              )}
 
               {deleteDialog == category.id ? (
                 ""
               ) : (
-                <button onClick={() => setDeleteDialog(category.id)}>X</button>
+                <button onClick={() => setDeleteDialog(category.id)}>
+                  <img src="delete.png" width={"20px"} alt=""
+                   className="hover:scale-150 duration-100 transition-all ease-linear" />
+                </button>
               )}
             </div>
             {deleteDialog == category.id ? (
@@ -96,15 +143,20 @@ let cats = [...categories,...optimisticCats]
                   deleted !!!
                 </p>
                 <div className="flex justify-around"></div>
-                <Form method="POST"
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  let formData = new FormData(e.currentTarget);
-                  let id = formData.get('id') as string
-                  //  Todos =  Todos.filter((todo)=> todo.id !== id)
-    
-                  submit({id, action: "delete-cat"}, { navigate: false, method: "post" });
-                }}>
+                <Form
+                  method="POST"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    let formData = new FormData(e.currentTarget);
+                    let id = formData.get("id") as string;
+                    //  Todos =  Todos.filter((todo)=> todo.id !== id)
+
+                    submit(
+                      { id, action: "delete-cat" },
+                      { navigate: false, method: "post" }
+                    );
+                  }}
+                >
                   <input name="id" value={category.id} type="hidden" />
                   <button
                     name="action"
@@ -137,8 +189,6 @@ let cats = [...categories,...optimisticCats]
        </div> :
        ""} */}
       </ul>
-
-      
     </div>
   );
 };

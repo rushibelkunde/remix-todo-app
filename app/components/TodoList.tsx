@@ -1,4 +1,9 @@
-import { redirect, useLoaderData, useLocation, useSubmit } from "@remix-run/react";
+import {
+  redirect,
+  useLoaderData,
+  useLocation,
+  useSubmit,
+} from "@remix-run/react";
 import TodoItem from "./TodoItem";
 import React, { useState, useTransition } from "react";
 import { useSearchParams } from "@remix-run/react";
@@ -7,76 +12,78 @@ import { Form } from "@remix-run/react";
 import { useFetchers } from "@remix-run/react";
 
 const TodoList = () => {
-  const fetchers = useFetchers()
+  const fetchers = useFetchers();
   // const location = useLocation()
   // console.log(location.search)
   const [searchParams, setSearchParams] = useSearchParams();
-  const [showSubtodo, setShowSubtodo] = useState('')
+  const [showSubtodo, setShowSubtodo] = useState("");
+  const [showBookmarked, setShowBookmarked] = useState(false);
+  const [status, setStatus] = useState("");
 
   let { categories, todos, pages }: any = useLoaderData();
 
   // const [page, setPage] = useState('0')
 
-  
   const [search, setSearch] = useState("");
 
   let optimisticTodos = fetchers.reduce((memo: Array<Todo>, f) => {
-        if (f.formData && f.formData.get('intent')=="add-todo") {
-          let data : any= Object.fromEntries(f.formData)
-    
-          if (!todos.map((todo:Todo) => todo.id).includes(data.id)) {
-            data.completed = false
-            memo.push(data);
-          }
+    if (f.formData && f.formData.get("intent") == "add-todo") {
+      let data: any = Object.fromEntries(f.formData);
+
+      if (!todos.map((todo: Todo) => todo.id).includes(data.id)) {
+        data.completed = false;
+        memo.push(data);
+      }
+    }
+    if (f.formData && f.formData.get("action") == "delete-todo") {
+      let data = Object.fromEntries(f.formData);
+      todos = todos.filter((todo: Todo) => todo.id !== data.id);
+      console.log(todos);
+    }
+
+    if (f.formData && f.formData.get("action") == "toggle-todo") {
+      let data = Object.fromEntries(f.formData);
+      todos = todos.map((todo: Todo) => {
+        if (todo.id == data.todoId) {
+          todo.completed = !JSON.parse(data.completed as string);
+          return todo;
+        } else {
+          return todo;
         }
-        if (f.formData && f.formData.get('action')=="delete-todo") {
-          let data = Object.fromEntries(f.formData)
-            todos = todos.filter((todo : Todo)=> todo.id !== data.id)
-            console.log(todos)
-            
-        }
-       
-        if (f.formData && f.formData.get('action')=="toggle-todo") {
-          let data = Object.fromEntries(f.formData)
-            todos = todos.map((todo: Todo)=> {
-              if(todo.id == data.todoId){
-                todo.completed = !JSON.parse(data.completed as string)
-                return todo
-              }
-              else{
-                return todo
-              }
-             })
-            
-        }
+      });
+    }
 
-        // if (f.formData && f.formData.get('action')=="edit-todo") {
-        //   console.log("edit optimistic")
-        //   let data = Object.fromEntries(f.formData)
-        //     todos = todos.map((todo: Todo)=> {
-        //       if(todo.id == data.todoId){
-        //         todo.title = data.title
-        //       }
-        //       else{
-        //         return todo
-        //       }
-        //      })
-            
-        // }
+    // if (f.formData && f.formData.get('action')=="edit-todo") {
+    //   console.log("edit optimistic")
+    //   let data = Object.fromEntries(f.formData)
+    //     todos = todos.map((todo: Todo)=> {
+    //       if(todo.id == data.todoId){
+    //         todo.title = data.title
+    //       }
+    //       else{
+    //         return todo
+    //       }
+    //      })
 
-    
-       return memo;
-     }, []);
+    // }
 
-    
+    return memo;
+  }, []);
 
-    let Todos = [...optimisticTodos, ...todos]
+  let Todos = [...optimisticTodos, ...todos];
 
-    // const [stateTodos, setStateTodos] = useState([...Todos])
+  if (status) {
+    Todos = Todos.filter((todo) => todo.status == status);
+  }
 
-    
+  if (showBookmarked) {
+    Todos = Todos.filter((todo) => todo.bookmarked);
+  }
+
+  // const [stateTodos, setStateTodos] = useState([...Todos])
+
   return (
-    <div>
+    <div className="flex flex-col items-center justify-center">
       <div className="flex gap-3 w-full items-center justify-center mt-2">
         <input
           type="text"
@@ -101,15 +108,18 @@ const TodoList = () => {
         )}
         <button
           onClick={() => {
-            
             const params = new URLSearchParams();
             params.append(
               "cat",
-              searchParams.get("cat") ? searchParams.get("cat") as string : "all"
+              searchParams.get("cat")
+                ? (searchParams.get("cat") as string)
+                : "all"
             );
             params.append(
               "page",
-              searchParams.get("page") ? searchParams.get("page") as string : "0"
+              searchParams.get("page")
+                ? (searchParams.get("page") as string)
+                : "0"
             );
             params.append("search", search);
             setSearchParams(params, {
@@ -122,7 +132,7 @@ const TodoList = () => {
         </button>
       </div>
 
-      <ul className="flex flex-col items-center gap-2 mt-5">
+      <div className="flex items-center justify-center w-[300px] mt-5">
         <select
           name="category"
           className="m-auto"
@@ -145,8 +155,36 @@ const TodoList = () => {
           ))}
         </select>
 
-        
+        <select
+          name="status"
+          className="m-auto"
+          id=""
+          value={status}
+          onChange={(e) => {
+            setStatus(e.target.value);
+          }}
+        >
+          <option value="">status</option>
+          <option value="IN_PROGRESS">in_progress</option>
+          <option value="ON_HOLD">on_hold</option>
+          <option value="COMPLETED">completed</option>
+        </select>
 
+        <button
+          onClick={() => setShowBookmarked(!showBookmarked)}
+          className="p-1 text-white bg-black"
+        >
+          {showBookmarked ? "cancel" : "bookmarked"}
+        </button>
+      </div>
+
+      {showBookmarked ? (
+        <h1 className="text-center font-semibold text-2xl">Bookmarked</h1>
+      ) : (
+        ""
+      )}
+
+      <ul className="flex flex-col items-center gap-2 mt-5">
         {Todos?.map((todo: Todo) => (
           <TodoItem
             // key={todo.id}
@@ -159,19 +197,51 @@ const TodoList = () => {
       </ul>
 
       <div className="flex justify-center items-center gap-2 w-full">
-        {Array.from({ length: parseInt(pages as string) }, (_, index) => (
+        <select
+          name=""
+          id=""
+          defaultValue={5}
+          onChange={(e) => {
+            const params = new URLSearchParams();
+            params.append(
+              "cat",
+              searchParams.get("cat")
+                ? (searchParams.get("cat") as string)
+                : "all"
+            );
+            params.append("records", `${e.target.value}`);
+            setSearchParams(params, {
+              preventScrollReset: true,
+            });
+          }}
+        >
+          {Array.from({ length: 10 }, (_, index) => (
+            <option value={index + 1}>{index + 1}</option>
+          ))}
+        </select>
+        {Array.from({ length: parseInt(pages) }, (_, index) => (
           <button
+            className={`${
+              String(index) == searchParams.get("page") ? "bg-gray-400" : ""
+            }`}
             onClick={() => {
               const params = new URLSearchParams();
               params.append(
+                "records",
+                searchParams.get("records")
+                  ? (searchParams.get("records") as string)
+                  : "5"
+              );
+              params.append(
                 "cat",
-                searchParams.get("cat") ? searchParams.get("cat") as string : "all"
+                searchParams.get("cat")
+                  ? (searchParams.get("cat") as string)
+                  : "all"
               );
               params.append("page", `${index}`);
               setSearchParams(params, {
                 preventScrollReset: true,
               });
-
             }}
           >
             {index + 1}

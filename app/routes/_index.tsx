@@ -1,7 +1,13 @@
 import type { MetaFunction } from "@remix-run/node";
 
 import { authenticator } from "~/utils/auth.server";
-import { Form, Outlet, useFetchers, useLoaderData, useSearchParams } from "@remix-run/react";
+import {
+  Form,
+  Outlet,
+  useFetchers,
+  useLoaderData,
+  useSearchParams,
+} from "@remix-run/react";
 import { ActionFunction, json, redirect } from "@remix-run/node";
 import { LoaderFunctionArgs } from "@remix-run/node";
 import TodoForm from "~/components/TodoForm";
@@ -21,14 +27,13 @@ export const meta: MetaFunction = () => {
 
 // Loader Function
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
-
-  
   const user: User | any = await authenticator.isAuthenticated(request, {
     failureRedirect: "/login",
   });
   let { searchParams } = new URL(request.url);
   searchParams.append("page", "0");
   searchParams.append("cat", "all");
+  searchParams.append("records", "5");
 
   const categories = await db.category.findMany({
     where: {
@@ -64,43 +69,57 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
       created_at: "desc",
     },
     skip: searchParams.get("page")
-      ? 5 * parseInt(searchParams.get("page") as string)
+      ? parseInt(searchParams.get("records") as string) *
+        parseInt(searchParams.get("page") as string)
       : 0,
-    take: 5,
+    take: searchParams.get("records")
+      ? parseInt(searchParams.get("records") as string)
+      : 5,
   });
 
+  let subTodos;
 
-  let allSubTodos : Array<{todoId : string, subtodos: SubTodo[]}>=[];
-
-  todos.map(async(todo: Todo)=>{
-    let subtodos = await db.subTodo.findMany({
+  if (searchParams.get("todoId")) {
+    subTodos = await db.subTodo.findMany({
       where: {
-        todo_id: todo.id
+        todo_id: searchParams.get("todoId") as string,
       },
     });
-    allSubTodos.push({todoId : todo.id, subtodos})
-  })
+  }
 
-  const pages = Math.ceil((await db.todo.findMany()).length / 5);
+  // let allSubTodos : Array<{todoId : string, subtodos: SubTodo[]}>=[];
+  // todos.map(async(todo: Todo)=>{
+  //   let subtodos = await db.subTodo.findMany({
+  //     where: {
+  //       todo_id: todo.id
+  //     },
+  //   });
+  //   allSubTodos.push({todoId : todo.id, subtodos})
+  // })
 
-  return json({ user, categories, todos, pages , allSubTodos});
+  const pages = Math.ceil(
+    (await db.todo.findMany({ where: { user_id: user.uid } })).length /
+      parseInt(searchParams.get("records") as string)
+  );
+
+  console.log(pages);
+
+  return json({ user, categories, todos, pages, subTodos });
 };
 
 // Action Function
 export const action: ActionFunction = async ({ request }) => {
   // await new Promise((resolve)=> setTimeout(resolve,3000))
   const form = await request.formData();
-  console.log(form)
+  console.log(form);
   const action = form.get("action");
-  console.log(action)
+  console.log(action);
 
-  console.log(Object.fromEntries(form))
+  console.log(Object.fromEntries(form));
 
   const user: any = await authenticator.isAuthenticated(request, {
     failureRedirect: "/login",
   });
-
-  
 
   switch (action) {
     case "logout": {
@@ -110,10 +129,22 @@ export const action: ActionFunction = async ({ request }) => {
     case "add-cat": {
       return await db.category.create({
         data: {
-          id: form.get('id') as string,
+          id: form.get("id") as string,
           user_id: user.uid as string,
           category_name: form.get("category_name") as any,
           display_name: form.get("display_name") as any,
+        },
+      });
+    }
+
+    case "edit-category": {
+      return await db.category.update({
+        where: {
+          id: form.get("id") as string,
+        },
+        data: {
+          category_name: form.get("title") as string,
+          display_name: form.get("title") as string,
         },
       });
     }
@@ -137,8 +168,60 @@ export const action: ActionFunction = async ({ request }) => {
       });
     }
 
+    case "change-status": {
+      return await db.todo.update({
+        where: {
+          id: form.get("id") as string,
+        },
+        data: {
+          status: form.get("status"),
+        } as Todo,
+      });
+    }
+
+    case "change-status-subtodo": {
+      const todo = await db.subTodo.update({
+        where: {
+          id: form.get("id") as string,
+        },
+        data: {
+          status: form.get("status"),
+        } as Todo,
+      });
+
+      const subTodos = await db.subTodo.findMany({
+        where: {
+          todo_id: todo.todo_id,
+        },
+      });
+
+      const index = subTodos.findIndex(
+        ({ status }) => status == "IN_PROGRESS" || status == "ON_HOLD"
+      );
+      if (index == -1 && subTodos.length > 0) {
+        await db.todo.update({
+          where: {
+            id: todo.todo_id,
+          },
+          data: {
+            status: "COMPLETED",
+          },
+        });
+      } else {
+        await db.todo.update({
+          where: {
+            id: todo.todo_id,
+          },
+          data: {
+            status: "IN_PROGRESS",
+          },
+        });
+      }
+      return todo;
+    }
+
     case "delete-todo": {
-      console.log("delete")
+      console.log("delete");
       return await db.todo.delete({
         where: {
           id: form.get("id") as string,
@@ -157,11 +240,23 @@ export const action: ActionFunction = async ({ request }) => {
       });
     }
 
+    case "toggle-bookmark": {
+      return await db.todo.update({
+        where: {
+          id: form.get("id") as string,
+        },
+
+        data: {
+          bookmarked: !JSON.parse(form.get("bookmarked") as string),
+        },
+      });
+    }
+
     case "add-subtodo": {
-      console.log("added")
+      console.log("added");
       return await db.subTodo.create({
         data: {
-          id: form.get('id') as string,
+          id: form.get("id") as string,
           user_id: user.uid,
           todo_id: form.get("todo_id") as string,
           title: form.get("title") as string,
@@ -200,31 +295,31 @@ export const action: ActionFunction = async ({ request }) => {
       });
 
       const subTodos = await db.subTodo.findMany({
-        where:{
-          todo_id: todo.todo_id
-        }
-      })
+        where: {
+          todo_id: todo.todo_id,
+        },
+      });
 
-    const index = subTodos.findIndex(({ completed }) => completed == false);
-    if (index == -1 && subTodos.length > 0) {
-      await db.todo.update({
-        where: {
-          id: todo.todo_id
-        },
-        data: {
-          completed: true,
-        },
-      });
-    } else {
-      await db.todo.update({
-        where: {
-          id: todo.todo_id
-        },
-        data: {
-          completed: false,
-        },
-      });
-    }
+      const index = subTodos.findIndex(({ completed }) => completed == false);
+      if (index == -1 && subTodos.length > 0) {
+        await db.todo.update({
+          where: {
+            id: todo.todo_id,
+          },
+          data: {
+            completed: true,
+          },
+        });
+      } else {
+        await db.todo.update({
+          where: {
+            id: todo.todo_id,
+          },
+          data: {
+            completed: false,
+          },
+        });
+      }
       return todo;
     }
 
@@ -238,8 +333,6 @@ export const action: ActionFunction = async ({ request }) => {
         },
       });
     }
-
-    
 
     // case "get-subtodos": {
     //   const subtodos = await db.subTodo.findMany({
@@ -262,9 +355,6 @@ export const action: ActionFunction = async ({ request }) => {
 };
 
 export default function Index() {
-
-  
-  
   const [showCategory, setShowCategory] = useState(false);
   const user: any = useLoaderData();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -300,13 +390,13 @@ export default function Index() {
         </button>
       </div>
       <div className="">
-        {showCategory ? <CategoryForm/> : ""}
-        <TodoForm  />
+        {showCategory ? <CategoryForm /> : ""}
+        <TodoForm />
         <TodoList />
       </div>
 
       {/* <TodoList user={user} /> */}
-      <Outlet/>
+      <Outlet />
     </div>
   );
 }
