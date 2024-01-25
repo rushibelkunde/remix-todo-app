@@ -1,12 +1,15 @@
 import React, { Ref, useRef, useState } from "react";
 import SubTodoList from "./SubTodos";
-import { Form, useNavigation } from "@remix-run/react";
+import { Form, Link, useNavigation } from "@remix-run/react";
 import { useSearchParams } from "@remix-run/react";
 import { useSubmit } from "@remix-run/react";
 import type { Todo } from "@prisma/client";
 import { SubTodo } from "@prisma/client";
 import { useLoaderData } from "@remix-run/react";
-import { loader } from "~/routes/_index";
+import { loader } from "~/routes/home";
+import { Outlet } from "@remix-run/react";
+import deleteIcon from "public/delete.png";
+import editIcon from "public/edit.png";
 const TodoItem = ({
   todo,
   currentPage,
@@ -19,6 +22,10 @@ const TodoItem = ({
   setShowSubtodo: Function;
 }) => {
   const submit = useSubmit();
+
+  const data = useLoaderData();
+
+  console.log("data", data);
 
   const [searchParams, setSearchParams] = useSearchParams();
   const [onEdit, setOnEdit] = useState(false);
@@ -109,7 +116,7 @@ const TodoItem = ({
             <h1 className="font-semibold">{todo.title}</h1>
             <button onClick={(e) => setOnEdit(true)}>
               <img
-                src="edit.png"
+                src={editIcon}
                 alt=""
                 width={"20px"}
                 className="hover:scale-150 duration-100 transition-all ease-linear"
@@ -202,7 +209,7 @@ const TodoItem = ({
             onClick={() => setDeleteDialog(todo.id)}
           >
             <img
-              src="delete.png"
+              src={deleteIcon}
               alt=""
               width={25}
               className="hover:scale-150 duration-100 transition-all ease-linear"
@@ -211,42 +218,69 @@ const TodoItem = ({
         )}
 
         {showSubtodo == todo.id ? (
-          <button
-            onClick={() => {
-              setShowSubtodo("");
-              const params = new URLSearchParams();
-              params.append("cat", searchParams.get("cat") as string);
-              params.append("page", searchParams.get("page") as string);
-              params.delete("todoId");
-              setSearchParams(params, {
-                preventScrollReset: true,
-              });
-            }}
-            className="font-bold"
-          >
-            -
+          // <button
+          //   onClick={() => {
+          //     setShowSubtodo("");
+          //     // const params = new URLSearchParams();
+          //     // params.append("cat", searchParams.get("cat") as string);
+          //     // params.append("page", searchParams.get("page") as string);
+          //     // params.delete("todoId");
+          //     // setSearchParams(params, {
+          //     //   preventScrollReset: true,
+          //     // });
+          //   }}
+          //   className="font-bold"
+          // >
+          //   -
+          // </button>
+
+          <button>
+            <Link
+              onClick={() => {
+                setShowSubtodo("");
+              }}
+              to={`/home?records=${searchParams.get('records')|| "5"}&page=
+              ${searchParams.get('page')|| "0"}&cat=${searchParams.get('cat')||"all"}`}
+            >
+              -
+            </Link>
           </button>
         ) : (
-          <button
-            onClick={() => {
-              setShowSubtodo(todo.id);
-              const params = new URLSearchParams();
-              params.append(
-                "cat",
-                (searchParams.get("cat") as string) || "all"
-              );
-              params.append(
-                "page",
-                (searchParams.get("page") as string) || "0"
-              );
-              params.append("todoId", todo.id);
-              setSearchParams(params, {
-                preventScrollReset: true,
-              });
-            }}
-            className="font-bold hover:scale-[2] duration-100 transition-all ease-linear"
-          >
-            +
+          // <button
+          //   onClick={(e) => {
+          //     e.preventDefault()
+          //     setShowSubtodo(todo.id);
+          //     // submit({action:"get-subtodos", id: todo.id}, {method:"GET"})
+          //     const params = new URLSearchParams();
+          //     params.append(
+          //       "cat",
+          //       (searchParams.get("cat") as string) || "all"
+          //     );
+          //     params.append(
+          //       "page",
+          //       (searchParams.get("page") as string) || "0"
+          //     );
+          //     params.append("todoId", todo.id);
+          //     setSearchParams(params, {
+          //       preventScrollReset: true,
+          //     });
+          //   }}
+          //   className="font-bold hover:scale-[2] duration-100 transition-all ease-linear"
+          // >
+          //   +
+          // </button>
+
+          <button>
+            <Link
+              onClick={() => {
+                setShowSubtodo(todo.id);
+              }}
+              prefetch="intent"
+              to={`/home/${todo.id}?records=${searchParams.get('records')|| "5"}&page=
+              ${searchParams.get('page')|| "0"}&cat=${searchParams.get('cat')||"all"}`}
+            >
+              +
+            </Link>
           </button>
         )}
 
@@ -288,7 +322,10 @@ const TodoItem = ({
         </Form>
       </li>
       <div>
-        {showSubtodo === todo.id ? <SubTodoList todoId={todo.id} /> : ""}
+        {/* {showSubtodo === todo.id ? <SubTodoList todoId={todo.id} /> : ""} */}
+        {showSubtodo === todo.id ? <Outlet /> : ""}
+
+        {/* <Outlet/> */}
       </div>
     </>
   );

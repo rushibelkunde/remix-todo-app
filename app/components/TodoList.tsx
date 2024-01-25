@@ -72,7 +72,7 @@ const TodoList = () => {
       let data = Object.fromEntries(f.formData)
         todos = todos.map((todo: Todo)=> {
           if(todo.id == data.id){
-            todo.status = String(data.status)
+            todo.status = (data.status) as any
             return todo
           }
           else{
@@ -201,7 +201,7 @@ const TodoList = () => {
       <ul className="flex flex-col items-center gap-2 mt-5">
         {Todos?.map((todo: Todo) => (
           <TodoItem
-            // key={todo.id}
+            key={todo.id}
             todo={todo}
             showSubtodo={showSubtodo}
             setShowSubtodo={setShowSubtodo}

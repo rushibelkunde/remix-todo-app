@@ -1,19 +1,171 @@
 import React, { useEffect, useState } from "react";
 import {
   Form,
+  json,
   useActionData,
   useFetchers,
   useLoaderData,
 } from "@remix-run/react";
 import { useSubmit } from "@remix-run/react";
+import { authenticator } from "~/utils/auth.server";
+import { Todo } from "@prisma/client";
+import { ActionFunctionArgs } from "@remix-run/node";
+
+import deleteImage from "public/delete.png"
+import editImage from "public/edit.png"
 
 import type { Category, SubTodo } from "@prisma/client";
-import { loader } from "~/routes/home.$id";
+import { db } from "~/utils/db.server";
+import { LoaderFunctionArgs } from "@remix-run/node";
 
-const SubTodoList = ({ todoId }: { todoId: string }) => {
+export const loader = async ({params} : LoaderFunctionArgs) => {
+
+  const {id} = params
+
+  const subTodos = await db.subTodo.findMany({
+    where:{
+      todo_id: id
+    }
+  })
+
+  return json({subTodos , todoId: id})
+
+}
+
+export const action = async ({ request } : ActionFunctionArgs) => {
+  // await new Promise((resolve)=> setTimeout(resolve,3000))
+  const form = await request.formData();
+  console.log(form);
+  const action = form.get("action");
+  console.log(action);
+
+  console.log(Object.fromEntries(form));
+
+  const user: any = await authenticator.isAuthenticated(request, {
+    failureRedirect: "/login",
+  });
+
+  switch (action) {
+   
+
+    case "change-status-subtodo": {
+      const todo = await db.subTodo.update({
+        where: {
+          id: form.get("id") as string,
+        },
+        data: {
+          status: form.get("status"),
+        } as Todo,
+      });
+
+      const subTodos = await db.subTodo.findMany({
+        where: {
+          todo_id: todo.todo_id,
+        },
+      });
+
+      const index = subTodos.findIndex(
+        ({ status }) => status == "IN_PROGRESS" || status == "ON_HOLD"
+      );
+      if (index == -1 && subTodos.length > 0) {
+        await db.todo.update({
+          where: {
+            id: todo.todo_id,
+          },
+          data: {
+            status: "COMPLETED",
+          },
+        });
+      } else {
+        await db.todo.update({
+          where: {
+            id: todo.todo_id,
+          },
+          data: {
+            status: "IN_PROGRESS",
+          },
+        });
+      }
+      return todo;
+    }
+
+
+    case "add-subtodo": {
+      console.log("added");
+      return await db.subTodo.create({
+        data: {
+          id: form.get("id") as string,
+          user_id: user.uid,
+          todo_id: form.get("todo_id") as string,
+          title: form.get("title") as string,
+        },
+      });
+    }
+
+    case "delete-subtodo": {
+      return await db.subTodo.delete({
+        where: {
+          id: form.get("id") as string,
+        },
+      });
+    }
+
+    case "toggle-subTodo": {
+      const todo = await db.subTodo.update({
+        where: {
+          id: form.get("subTodoId") as string,
+        },
+        data: {
+          completed: !JSON.parse(form.get("completed") as string),
+        },
+      });
+
+      const subTodos = await db.subTodo.findMany({
+        where: {
+          todo_id: todo.todo_id,
+        },
+      });
+
+      const index = subTodos.findIndex(({ completed }) => completed == false);
+      if (index == -1 && subTodos.length > 0) {
+        await db.todo.update({
+          where: {
+            id: todo.todo_id,
+          },
+          data: {
+            completed: true,
+          },
+        });
+      } else {
+        await db.todo.update({
+          where: {
+            id: todo.todo_id,
+          },
+          data: {
+            completed: false,
+          },
+        });
+      }
+      return todo;
+    }
+
+    case "edit-subtodo": {
+      return await db.subTodo.update({
+        where: {
+          id: form.get("subtodoId") as string,
+        },
+        data: {
+          title: form.get("title") as string,
+        },
+      });
+    }
+  }
+};
+
+const SubTodoList = () => {
   const [onEdit, setOnEdit] = useState("");
 
-  let { subTodos } = useLoaderData<typeof loader>();
+  let { subTodos, todoId } = useLoaderData<typeof loader>();
 
 
   // console.log(await getSubTodos(todoId))
@@ -202,7 +354,7 @@ const SubTodoList = ({ todoId }: { todoId: string }) => {
                   <h1 className="font-semibold">{subTodo.title}</h1>
                   <button onClick={(e) => setOnEdit(subTodo.id)}>
                     <img
-                      src="edit.png"
+                      src={editImage}
                       alt=""
                       width={"20px"}
                       className="hover:scale-150 duration-100 transition-all ease-linear"
@@ -249,8 +401,8 @@ const SubTodoList = ({ todoId }: { todoId: string }) => {
                 <input type="hidden" name="id" value={subTodo.id} />
                 <button name="action" value={"delete-subtodo"}>
                   <img
-                    src="delete.png"
-                    alt=""
+                    src={deleteImage}
+                    alt="X"
                     width={"25px"}
                     className="hover:scale-150 duration-100 transition-all ease-linear"
                   />

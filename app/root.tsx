@@ -10,6 +10,8 @@ import {
 } from "@remix-run/react";
 
 
+
+
 import stylesheet from "~/tailwind.css";
 
 export const links: LinksFunction = () => [
@@ -27,7 +29,7 @@ export default function App() {
         
       </head>
       <body>
-        <Outlet />
+        <Outlet/>
         <ScrollRestoration/>
         <Scripts/>
         <LiveReload />
