@@ -19,6 +19,8 @@ export const links: LinksFunction = () => [
 ];
 
 export default function App() {
+
+  console.log()
   return (
     <html lang="en">
       <head>
@@ -29,10 +31,13 @@ export default function App() {
         
       </head>
       <body>
+        
         <Outlet/>
+        
         <ScrollRestoration/>
         <Scripts/>
         <LiveReload />
+        
       </body>
     </html>
   );

@@ -239,8 +239,10 @@ const TodoItem = ({
               onClick={() => {
                 setShowSubtodo("");
               }}
-              to={`/home?records=${searchParams.get('records')|| "5"}&page=
-              ${searchParams.get('page')|| "0"}&cat=${searchParams.get('cat')||"all"}`}
+              // to={`/home?records=${searchParams.get('records')|| "5"}&page=
+              // ${searchParams.get('page')|| "0"}&cat=${searchParams.get('cat')||"all"}`}
+
+              to={`/home?${searchParams.toString()}`}
             >
               -
             </Link>
@@ -275,9 +277,10 @@ const TodoItem = ({
               onClick={() => {
                 setShowSubtodo(todo.id);
               }}
-              prefetch="intent"
-              to={`/home/${todo.id}?records=${searchParams.get('records')|| "5"}&page=
-              ${searchParams.get('page')|| "0"}&cat=${searchParams.get('cat')||"all"}`}
+              prefetch="viewport"
+              // to={`/home/${todo.id}?records=${searchParams.get('records')|| "5"}&page=
+              // ${searchParams.get('page')|| "0"}&cat=${searchParams.get('cat')||"all"}`}
+              to={`/home/${todo.id}?${searchParams.toString()}`}
             >
               +
             </Link>
@@ -285,10 +288,24 @@ const TodoItem = ({
         )}
 
         <Form method="POST">
-          <input type="hidden" name="id" value={todo.id} />
-          <input type="hidden" name="bookmarked" value={`${todo.bookmarked}`} />
+         
+          <button
+            type="submit"
+            name="action"
+            value={"toggle-bookmark"}
+            onClick={(e) => {
+              e.preventDefault();
 
-          <button type="submit" name="action" value={"toggle-bookmark"}>
+              submit(
+                {
+                  action: "toggle-bookmark",
+                  bookmarked: todo.bookmarked,
+                  id: todo.id,
+                },
+                { method: "post", navigate: false }
+              );
+            }}
+          >
             {todo.bookmarked ? (
               <svg
                 xmlns="http://www.w3.org/2000/svg"

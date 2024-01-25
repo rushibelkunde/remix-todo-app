@@ -81,6 +81,20 @@ const TodoList = () => {
          })
     }
 
+    if ( f.formData?.get('action')=="toggle-bookmark") {
+      console.log("bookmark optimistic")
+      let data = Object.fromEntries(f.formData)
+        todos = todos.map((todo: Todo)=> {
+          if(todo.id == data.id){
+            todo.bookmarked = (!data.bookmarked) as any
+            return todo
+          }
+          else{
+            return todo
+          }
+         })
+    }
+
     return memo;
   }, []);
 
