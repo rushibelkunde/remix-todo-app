@@ -218,59 +218,17 @@ const TodoItem = ({
         )}
 
         {showSubtodo == todo.id ? (
-          // <button
-          //   onClick={() => {
-          //     setShowSubtodo("");
-          //     // const params = new URLSearchParams();
-          //     // params.append("cat", searchParams.get("cat") as string);
-          //     // params.append("page", searchParams.get("page") as string);
-          //     // params.delete("todoId");
-          //     // setSearchParams(params, {
-          //     //   preventScrollReset: true,
-          //     // });
-          //   }}
-          //   className="font-bold"
-          // >
-          //   -
-          // </button>
-
           <button>
             <Link
               onClick={() => {
                 setShowSubtodo("");
               }}
-              // to={`/home?records=${searchParams.get('records')|| "5"}&page=
-              // ${searchParams.get('page')|| "0"}&cat=${searchParams.get('cat')||"all"}`}
-
               to={`/home?${searchParams.toString()}`}
             >
               -
             </Link>
           </button>
         ) : (
-          // <button
-          //   onClick={(e) => {
-          //     e.preventDefault()
-          //     setShowSubtodo(todo.id);
-          //     // submit({action:"get-subtodos", id: todo.id}, {method:"GET"})
-          //     const params = new URLSearchParams();
-          //     params.append(
-          //       "cat",
-          //       (searchParams.get("cat") as string) || "all"
-          //     );
-          //     params.append(
-          //       "page",
-          //       (searchParams.get("page") as string) || "0"
-          //     );
-          //     params.append("todoId", todo.id);
-          //     setSearchParams(params, {
-          //       preventScrollReset: true,
-          //     });
-          //   }}
-          //   className="font-bold hover:scale-[2] duration-100 transition-all ease-linear"
-          // >
-          //   +
-          // </button>
 
           <button>
             <Link
@@ -278,9 +236,7 @@ const TodoItem = ({
                 setShowSubtodo(todo.id);
               }}
               prefetch="viewport"
-              // to={`/home/${todo.id}?records=${searchParams.get('records')|| "5"}&page=
-              // ${searchParams.get('page')|| "0"}&cat=${searchParams.get('cat')||"all"}`}
-              to={`/home/${todo.id}?${searchParams.toString()}`}
+               to={`/home/${todo.id}?${searchParams.toString()}`}
             >
               +
             </Link>
@@ -339,10 +295,7 @@ const TodoItem = ({
         </Form>
       </li>
       <div>
-        {/* {showSubtodo === todo.id ? <SubTodoList todoId={todo.id} /> : ""} */}
         {showSubtodo === todo.id ? <Outlet /> : ""}
-
-        {/* <Outlet/> */}
       </div>
     </>
   );
