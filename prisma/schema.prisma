@@ -4,6 +4,7 @@ generator client {
   provider = "prisma-client-js"
 }
 
+// vercel database
 // Define your database connection
 datasource db {
   provider = "postgresql"
