@@ -28,9 +28,7 @@ export const loader = async ({params} : LoaderFunctionArgs) => {
     }
   })
 
-  return json({subTodos , todoId: id}, {
-    "Cache-Control": "public, s-maxage=60"
-  })
+  return json({subTodos , todoId: id})
 
 }
 

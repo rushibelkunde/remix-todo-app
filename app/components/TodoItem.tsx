@@ -53,11 +53,11 @@ const TodoItem = ({
             : todo.status == "COMPLETED"
             ? "bg-green-200"
             : "bg-red-200"
-        } p-2 flex gap-4 min-w-80 justify-around rounded-xl items-center relative`}
+        } p-2 flex gap-4 min-w-80 justify-around rounded-xl items-center relative `}
       >
         {/* <span className='absolute left-[-20px] top-[50%] translate-y-[-50%] p-1 bg-white rounded-xl text-xs'>{todo.category_name}</span> */}
 
-        <Form method="POST">
+        {/* <Form method="POST">
           <input type="hidden" name="todoId" value={todo.id} />
           <input type="hidden" name="completed" value={`${todo.completed}`} />
           <button
@@ -72,15 +72,15 @@ const TodoItem = ({
             <input type="hidden" name="id" value={todo.id} />
             <input type="checkbox" name="" id="" checked={todo.completed} />
           </button>
-        </Form>
+        </Form> */}
 
         {onEdit ? (
-          <>
+          <div className="flex flex-col">
             <Form method="POST">
               <input
                 type="text"
                 name="title"
-                className="w-[200px] p-1"
+                className="w-[150px] p-1"
                 placeholder={todo.title}
               />
               <input type="hidden" name="todoId" value={todo.id} />
@@ -90,6 +90,8 @@ const TodoItem = ({
                 name="completed"
                 value={`${todo.completed}`}
               />
+            </Form>
+            <div className="flex justify-center items-center w-full gap-1">
               <button
                 type="submit"
                 name="action"
@@ -103,14 +105,14 @@ const TodoItem = ({
               >
                 save
               </button>
-            </Form>
-            <button
-              onClick={(e) => setOnEdit(false)}
-              className="p-1 bg-black text-white"
-            >
-              cancel
-            </button>
-          </>
+              <button
+                onClick={(e) => setOnEdit(false)}
+                className="p-1 bg-black text-white"
+              >
+                cancel
+              </button>
+            </div>
+          </div>
         ) : (
           <>
             <h1 className="font-semibold">{todo.title}</h1>
@@ -148,11 +150,11 @@ const TodoItem = ({
           </select>
         </Form>
 
-        <span className="text-sm font-normal">
+        {/* <span className="text-sm font-light text-gray-700 absolute  -top-4">
           {todo.created_at
             ? new Date(todo.created_at).toISOString().substring(0, 10)
             : new Date().toISOString().substring(0, 10)}
-        </span>
+        </span> */}
 
         {deleteDialog == todo.id ? (
           <div className="fixed w-full h-full top-0 z-[1] backdrop-blur-sm bg-gray-500 bg-opacity-10 selection:shadow-sm">
@@ -229,14 +231,13 @@ const TodoItem = ({
             </Link>
           </button>
         ) : (
-
           <button>
             <Link
               onClick={() => {
                 setShowSubtodo(todo.id);
               }}
               prefetch="viewport"
-               to={`/home/${todo.id}?${searchParams.toString()}`}
+              to={`/home/${todo.id}?${searchParams.toString()}`}
             >
               +
             </Link>
@@ -244,7 +245,6 @@ const TodoItem = ({
         )}
 
         <Form method="POST">
-         
           <button
             type="submit"
             name="action"
@@ -294,9 +294,7 @@ const TodoItem = ({
           </button>
         </Form>
       </li>
-      <div>
-        {showSubtodo === todo.id ? <Outlet /> : ""}
-      </div>
+      <div>{showSubtodo === todo.id ? <Outlet /> : ""}</div>
     </>
   );
 };

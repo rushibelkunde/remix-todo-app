@@ -132,7 +132,7 @@ const SubTodoList = ({ todoId }: { todoId: string }) => {
                   : "bg-red-200"
               } p-2 flex gap-2 min-w-64 justify-around rounded-xl items-center`}
             >
-              <Form method="POST">
+              {/* <Form method="POST">
                 <input type="hidden" name="subTodoId" value={subTodo.id} />
                 <input type="hidden" name="id" value={subTodo.id} />
                 <input
@@ -161,7 +161,7 @@ const SubTodoList = ({ todoId }: { todoId: string }) => {
                     checked={subTodo.completed}
                   />
                 </button>
-              </Form>
+              </Form> */}
 
               {onEdit == subTodo.id ? (
                 <>
