@@ -90,7 +90,7 @@ const TodoItem = ({
                 name="completed"
                 value={`${todo.completed}`}
               />
-            </Form>
+            
             <div className="flex justify-center items-center w-full gap-1">
               <button
                 type="submit"
@@ -112,6 +112,7 @@ const TodoItem = ({
                 cancel
               </button>
             </div>
+            </Form>
           </div>
         ) : (
           <>
