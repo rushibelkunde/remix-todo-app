@@ -180,46 +180,46 @@ export const action: ActionFunction = async ({ request }) => {
       });
     }
 
-    case "change-status-subtodo": {
-      const todo = await db.subTodo.update({
-        where: {
-          id: form.get("id") as string,
-        },
-        data: {
-          status: form.get("status"),
-        } as Todo,
-      });
+    // case "change-status-subtodo": {
+    //   const todo = await db.subTodo.update({
+    //     where: {
+    //       id: form.get("id") as string,
+    //     },
+    //     data: {
+    //       status: form.get("status"),
+    //     } as Todo,
+    //   });
 
-      const subTodos = await db.subTodo.findMany({
-        where: {
-          todo_id: todo.todo_id,
-        },
-      });
+    //   const subTodos = await db.subTodo.findMany({
+    //     where: {
+    //       todo_id: todo.todo_id,
+    //     },
+    //   });
 
-      const index = subTodos.findIndex(
-        ({ status }) => status == "IN_PROGRESS" || status == "ON_HOLD"
-      );
-      if (index == -1 && subTodos.length > 0) {
-        await db.todo.update({
-          where: {
-            id: todo.todo_id,
-          },
-          data: {
-            status: "COMPLETED",
-          },
-        });
-      } else {
-        await db.todo.update({
-          where: {
-            id: todo.todo_id,
-          },
-          data: {
-            status: "IN_PROGRESS",
-          },
-        });
-      }
-      return todo;
-    }
+    //   const index = subTodos.findIndex(
+    //     ({ status }) => status == "IN_PROGRESS" || status == "ON_HOLD"
+    //   );
+    //   if (index == -1 && subTodos.length > 0) {
+    //     await db.todo.update({
+    //       where: {
+    //         id: todo.todo_id,
+    //       },
+    //       data: {
+    //         status: "COMPLETED",
+    //       },
+    //     });
+    //   } else {
+    //     await db.todo.update({
+    //       where: {
+    //         id: todo.todo_id,
+    //       },
+    //       data: {
+    //         status: "IN_PROGRESS",
+    //       },
+    //     });
+    //   }
+    //   return todo;
+    // }
 
     case "delete-todo": {
       console.log("delete");

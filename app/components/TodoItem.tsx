@@ -90,28 +90,31 @@ const TodoItem = ({
                 name="completed"
                 value={`${todo.completed}`}
               />
-            
-            <div className="flex justify-center items-center w-full gap-1">
-              <button
-                type="submit"
-                name="action"
-                value={"edit-todo"}
-                className="p-1 bg-blue-600 text-white"
-                onClick={(e) => {
-                  e.preventDefault();
-                  setOnEdit(false);
-                  submit(e.currentTarget, { navigate: false, method: "post" });
-                }}
-              >
-                save
-              </button>
-              <button
-                onClick={(e) => setOnEdit(false)}
-                className="p-1 bg-black text-white"
-              >
-                cancel
-              </button>
-            </div>
+
+              <div className="flex justify-center items-center w-full gap-1">
+                <button
+                  type="submit"
+                  name="action"
+                  value={"edit-todo"}
+                  className="p-1 bg-blue-600 text-white"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setOnEdit(false);
+                    submit(e.currentTarget, {
+                      navigate: false,
+                      method: "post",
+                    });
+                  }}
+                >
+                  save
+                </button>
+                <button
+                  onClick={(e) => setOnEdit(false)}
+                  className="p-1 bg-black text-white"
+                >
+                  cancel
+                </button>
+              </div>
             </Form>
           </div>
         ) : (
