@@ -68,12 +68,14 @@ const Login = () => {
           className="bg-slate-100 p-2 rounded-xl"
           id=""
           placeholder="username"
+          defaultValue={"example"}
           required
         />
 
         <input
           type="password"
           name="password"
+          defaultValue={"1234"}
           className="bg-slate-100 p-2 rounded-xl"
           id=""
           placeholder="password"

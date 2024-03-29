@@ -79,6 +79,7 @@ const Register = () => {
           id=""
           placeholder="username"
           required
+          
         />
 
         <input
