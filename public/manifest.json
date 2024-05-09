@@ -1,0 +1,12 @@
+{
+    "name": "My Remix PWA",
+    "short_name": "Remix PWA",
+    "description": "A Remix Progressive Web App",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#ffffff",
+    "theme_color": "#000000",
+    "icons": [
+     
+    ]
+  }
