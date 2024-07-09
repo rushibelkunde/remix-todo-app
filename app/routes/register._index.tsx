@@ -1,11 +1,11 @@
 import { useActionData, useNavigate, useRouteError } from "@remix-run/react";
 import React, { useState } from "react";
-import { ActionFunctionArgs, json, redirect } from "@remix-run/node";
+import { ActionFunctionArgs, json, redirect } from "@remix-run/node/dist";
 import { db } from "~/utils/db.server";
 import bcrypt from "bcryptjs";
 import { Link } from "@remix-run/react";
 import { authenticator } from "~/utils/auth.server";
-import { LoaderFunctionArgs } from "@remix-run/node";
+import { LoaderFunctionArgs } from "@remix-run/node/dist";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const user = await authenticator.isAuthenticated(request, {

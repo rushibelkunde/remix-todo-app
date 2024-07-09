@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { Link, useLoaderData } from "@remix-run/react";
 
-import { LoaderFunctionArgs } from "@remix-run/node";
+import { LoaderFunctionArgs } from "@remix-run/node/dist";
 import { authenticator } from "~/utils/auth.server";
-import { ActionFunction } from "@remix-run/node";
+import { ActionFunction } from "@remix-run/node/dist";
 import { useActionData } from "@remix-run/react";
 import { useSubmit } from "@remix-run/react";
 

@@ -8,15 +8,16 @@ import {
 } from "@remix-run/react";
 import { useSubmit } from "@remix-run/react";
 import { authenticator } from "~/utils/auth.server";
-import { Todo } from "@prisma/client";
-import { ActionFunctionArgs } from "@remix-run/node";
+
+
+import { ActionFunctionArgs } from "@remix-run/node/dist";
 
 import deleteImage from "public/delete.png"
 import editImage from "public/edit.png"
 
-import type { Category, SubTodo } from "@prisma/client";
+
 import { db } from "~/utils/db.server";
-import { LoaderFunctionArgs } from "@remix-run/node";
+import { LoaderFunctionArgs } from "@remix-run/node/dist";
 
 export const loader = async ({params} : LoaderFunctionArgs) => {
 
@@ -55,7 +56,7 @@ export const action = async ({ request } : ActionFunctionArgs) => {
         },
         data: {
           status: form.get("status"),
-        } as Todo,
+        } as any,
       });
 
       const subTodos = await db.subTodo.findMany({

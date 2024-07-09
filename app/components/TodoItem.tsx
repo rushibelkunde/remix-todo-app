@@ -47,13 +47,13 @@ const TodoItem = ({
   return (
     <>
       <li
-        className={`${
+        className={ ` border-2 ${
           todo.status == "IN_PROGRESS"
-            ? "bg-yellow-200"
+            ? "border-yellow-200"
             : todo.status == "COMPLETED"
-            ? "bg-green-200"
-            : "bg-red-200"
-        } p-2 flex gap-4 min-w-80 justify-around rounded-xl items-center relative `}
+            ? "border-green-200"
+            : "border-red-200"
+        } p-3 flex gap-4 min-w-80 justify-around rounded-xl items-center relative shadow-md `}
       >
         {/* <span className='absolute left-[-20px] top-[50%] translate-y-[-50%] p-1 bg-white rounded-xl text-xs'>{todo.category_name}</span> */}
 
@@ -120,7 +120,7 @@ const TodoItem = ({
         ) : (
           <>
             <h1 className="font-semibold">{todo.title}</h1>
-            <button onClick={(e) => setOnEdit(true)}>
+            <button className="absolute top-[-15px] right-2 bg-white p-1" onClick={(e) => setOnEdit(true)}>
               <img
                 src={editIcon}
                 alt=""
@@ -211,13 +211,13 @@ const TodoItem = ({
           </div>
         ) : (
           <button
-            className="font-extrabold text-red-600"
+            className="font-extrabold  absolute top-[-18px] right-10 bg-white p-1"
             onClick={() => setDeleteDialog(todo.id)}
           >
             <img
               src={deleteIcon}
               alt=""
-              width={25}
+              width={27}
               className="hover:scale-150 duration-100 transition-all ease-linear"
             />
           </button>
@@ -271,7 +271,7 @@ const TodoItem = ({
                 xmlns="http://www.w3.org/2000/svg"
                 viewBox="0 0 24 24"
                 fill="primary"
-                className="w-6 h-6"
+                className="w-7 h-7  absolute top-[50%] left-[-15px] bg-white p-1 rotate-90"
               >
                 <path
                   fill-rule="evenodd"
@@ -286,7 +286,7 @@ const TodoItem = ({
                 viewBox="0 0 24 24"
                 stroke-width="1.5"
                 stroke="currentColor"
-                className="w-6 h-6"
+                className="w-7 h-7  absolute top-[50%] translate-y-[-50%] left-[-15px] bg-white p-1 rotate-[90deg]"
               >
                 <path
                   stroke-linecap="round"

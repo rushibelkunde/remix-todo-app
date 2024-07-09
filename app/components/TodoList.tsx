@@ -212,7 +212,7 @@ const TodoList = () => {
         ""
       )}
 
-      <ul className="flex flex-col items-center gap-2 mt-5">
+      <ul className="flex flex-col items-center gap-4 mt-5">
         {Todos?.map((todo: Todo) => (
           <TodoItem
             key={todo.id}
