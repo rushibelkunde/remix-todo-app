@@ -1,35 +1,43 @@
-import { Authenticator, AuthorizationError } from "remix-auth";
-import { sessionStorage } from "./session.server";
+// app/utils/auth.server.ts
+// remix-auth v4 setup.
+// v4 removed session management from Authenticator — sessions are handled manually.
+// authenticate() now returns the user directly; redirects are done in the caller.
+
+import { Authenticator } from "remix-auth";
 import { FormStrategy } from "remix-auth-form";
 import bcrypt from "bcryptjs";
-import { db } from "./db.server";
+import { findUserByUsername } from "~/db/repositories/user-repository.server";
 
-const authenticator = new Authenticator(sessionStorage);
+export type AuthUser = {
+  uid: string;
+  name: string;
+  username: string;
+};
 
-const formStrategy = new FormStrategy(async ({ form }) => {
-  const name = form.get("name");
-  const username = form.get("username");
-  const pass = form.get("password");
+export const authenticator = new Authenticator<AuthUser>();
 
-  const user = await db.user.findUnique({
-    where: {
-      username: username as string,
-    },
-  });
+authenticator.use(
+  new FormStrategy(async ({ form }) => {
+    const username = form.get("username") as string;
+    const pass = form.get("password") as string;
 
-  if (!user) {
-    throw new AuthorizationError("user don't exist");
-  }
-  const passwordMatch = await bcrypt.compare(
-    pass as string,
-    user.pass as string
-  );
+    const user = await findUserByUsername(username);
 
-  if (!passwordMatch) throw new AuthorizationError("invalid credentials");
+    if (!user) {
+      throw new Error("User does not exist.");
+    }
 
-  return user;
-});
+    const passwordMatch = await bcrypt.compare(pass, user.pass);
 
-authenticator.use(formStrategy, "form");
+    if (!passwordMatch) {
+      throw new Error("Invalid credentials.");
+    }
 
-export { authenticator };
+    return {
+      uid: user.uid,
+      name: user.name,
+      username: user.username,
+    };
+  }),
+  "form"
+);

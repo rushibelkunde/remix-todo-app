@@ -1,406 +1,165 @@
-import type { MetaFunction } from "@remix-run/node/dist";
+// app/routes/home.tsx
+// Home route — thin HTTP handler only.
+// All DB access is done via services.
 
-import { authenticator } from "~/utils/auth.server";
-import {
-  Form,
-  Outlet,
-  useFetchers,
-  useLoaderData,
-  useSearchParams,
-} from "@remix-run/react";
+import type { MetaFunction } from "@remix-run/node";
+import type { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node";
+import { json } from "@remix-run/node";
+import { useState } from "react";
+import { useLoaderData } from "@remix-run/react";
 
+import { requireUser, destroyUserSession } from "~/utils/session.server";
+import { parseFormData, getRequiredField, getOptionalField, parseBooleanField } from "~/utils/form-helpers";
+import * as todoService from "~/services/todo-service.server";
+import * as categoryService from "~/services/category-service.server";
+import * as subTodoService from "~/services/sub-todo-service.server";
 
-import { LoaderFunctionArgs } from "@remix-run/node/dist";
-import { ActionFunctionArgs, json, redirect } from "@remix-run/node/dist";
-import TodoForm from "~/components/TodoForm";
-import { useEffect, useState } from "react";
-import { db } from "~/utils/db.server";
-import TodoList from "~/components/TodoList";
-import type { SubTodo, Todo } from "@prisma/client";
-import CategoryForm from "~/components/CategoryForm";
-import { User } from "@prisma/client";
+import AppHeader from "~/components/layout/app-header";
+import TodoAddForm from "~/components/todo/todo-add-form";
+import TodoList from "~/components/todo/todo-list";
+import CategoryModal from "~/components/category/category-modal";
 
-export const meta: MetaFunction = () => {
-  return [
-    { title: "todo-app" },
-    { name: "description", content: "Todo app using Remix" },
-  ];
+export const meta: MetaFunction = () => [
+  { title: "My Todos" },
+  { name: "description", content: "Manage your todos with style." },
+];
+
+// ─── Loader ─────────────────────────────────────────────────────────────────
+
+export const loader = async ({ request }: LoaderFunctionArgs) => {
+  const user = await requireUser(request);
+
+  const { searchParams } = new URL(request.url);
+
+  const [categories, { todos, total_pages }] = await Promise.all([
+    categoryService.getUserCategories(user.uid),
+    todoService.getUserTodos(user.uid, {
+      category_id: searchParams.get("cat"),
+      search: searchParams.get("search"),
+      searchParams,
+    }),
+  ]);
+
+  return json({ user, categories, todos, total_pages });
 };
 
-// Loader Function
-export const loader = async ({ request, params }: LoaderFunctionArgs) => {
-  const user: User | any = await authenticator.isAuthenticated(request, {
-    failureRedirect: "/login",
-  });
-  let { searchParams } = new URL(request.url);
-  searchParams.append("page", "0");
-  searchParams.append("cat", "all");
-  searchParams.append("records", "5");
+// ─── Action ─────────────────────────────────────────────────────────────────
 
-  const categories = await db.category.findMany({
-    where: {
-      user_id: user.uid,
-    },
-  });
+export const action = async ({ request }: ActionFunctionArgs) => {
+  const user = await requireUser(request);
 
-  const whereCondition: {
-    user_id: string;
-    category_id?: string;
-    title?: {
-      contains: string;
-    };
-  } = {
-    user_id: user.uid,
-  };
-
-  const categoryId = searchParams.get("cat");
-  const search = searchParams.get("search");
-  if (categoryId !== "all") {
-    whereCondition.category_id = categoryId as string;
-  }
-
-  if (search !== "") {
-    whereCondition.title = {
-      contains: search ? search : "",
-    };
-  }
-
-  const todos = await db.todo.findMany({
-    where: whereCondition,
-    orderBy: {
-      created_at: "desc",
-    },
-    skip: searchParams.get("page")
-      ? parseInt(searchParams.get("records") as string) *
-        parseInt(searchParams.get("page") as string)
-      : 0,
-    take: searchParams.get("records")
-      ? parseInt(searchParams.get("records") as string)
-      : 5,
-  });
-
-  let subTodos;
-
-  if (searchParams.get("todoId")) {
-    subTodos = await db.subTodo.findMany({
-      where: {
-        todo_id: searchParams.get("todoId") as string,
-      },
-    });
-  }
-
-  // let allSubTodos : Array<{todoId : string, subtodos: SubTodo[]}>=[];
-  // todos.map(async(todo: Todo)=>{
-  //   let subtodos = await db.subTodo.findMany({
-  //     where: {
-  //       todo_id: todo.id
-  //     },
-  //   });
-  //   allSubTodos.push({todoId : todo.id, subtodos})
-  // })
-
-  const pages = Math.ceil(
-    (await db.todo.findMany({ where: { user_id: user.uid } })).length /
-      parseInt(searchParams.get("records") as string)
-  );
-
-  console.log(pages);
-
-  return json({ user, categories, todos, pages, subTodos });
-};
-
-// Action Function
-export const action: ActionFunction = async ({ request }) => {
-  // await new Promise((resolve)=> setTimeout(resolve,3000))
-  const form = await request.formData();
-  console.log(form);
-  const action = form.get("action");
-  console.log(action);
-
-  console.log(Object.fromEntries(form));
-
-  const user: any = await authenticator.isAuthenticated(request, {
-    failureRedirect: "/login",
-  });
+  const form = await parseFormData(request);
+  const action = getRequiredField(form, "action");
 
   switch (action) {
-    case "logout": {
-      return authenticator.logout(request, { redirectTo: "/login" });
-    }
+    case "logout":
+      return destroyUserSession(request, "/login");
 
-    case "add-cat": {
-      return await db.category.create({
-        data: {
-          id: form.get("id") as string,
-          user_id: user.uid as string,
-          category_name: form.get("category_name") as any,
-          display_name: form.get("display_name") as any,
-        },
-      });
-    }
-
-    case "edit-category": {
-      return await db.category.update({
-        where: {
-          id: form.get("id") as string,
-        },
-        data: {
-          category_name: form.get("title") as string,
-          display_name: form.get("title") as string,
-        },
-      });
-    }
-
-    case "delete-cat": {
-      return await db.category.delete({
-        where: {
-          id: form.get("id") as any,
-        },
-      });
-    }
-
-    case "add-todo": {
-      return await db.todo.create({
-        data: {
-          id: form.get("id"),
-          user_id: user.uid as string,
-          title: form.get("title"),
-          category_id: form.get("category"),
-        } as Todo,
-      });
-    }
-
-    case "change-status": {
-      return await db.todo.update({
-        where: {
-          id: form.get("id") as string,
-        },
-        data: {
-          status: form.get("status"),
-        } as Todo,
-      });
-    }
-
-    // case "change-status-subtodo": {
-    //   const todo = await db.subTodo.update({
-    //     where: {
-    //       id: form.get("id") as string,
-    //     },
-    //     data: {
-    //       status: form.get("status"),
-    //     } as Todo,
-    //   });
-
-    //   const subTodos = await db.subTodo.findMany({
-    //     where: {
-    //       todo_id: todo.todo_id,
-    //     },
-    //   });
-
-    //   const index = subTodos.findIndex(
-    //     ({ status }) => status == "IN_PROGRESS" || status == "ON_HOLD"
-    //   );
-    //   if (index == -1 && subTodos.length > 0) {
-    //     await db.todo.update({
-    //       where: {
-    //         id: todo.todo_id,
-    //       },
-    //       data: {
-    //         status: "COMPLETED",
-    //       },
-    //     });
-    //   } else {
-    //     await db.todo.update({
-    //       where: {
-    //         id: todo.todo_id,
-    //       },
-    //       data: {
-    //         status: "IN_PROGRESS",
-    //       },
-    //     });
-    //   }
-    //   return todo;
-    // }
-
-    case "delete-todo": {
-      console.log("delete");
-      return await db.todo.delete({
-        where: {
-          id: form.get("id") as string,
-        },
-      });
-    }
-
-    case "edit-todo": {
-      return await db.todo.update({
-        where: {
-          id: form.get("todoId") as string,
-        },
-        data: {
-          title: form.get("title") as string,
-        },
-      });
-    }
-
-    case "toggle-bookmark": {
-      return await db.todo.update({
-        where: {
-          id: form.get("id") as string,
-        },
-
-        data: {
-          bookmarked: !JSON.parse(form.get("bookmarked") as string),
-        },
-      });
-    }
-
-    case "add-subtodo": {
-      console.log("added");
-      return await db.subTodo.create({
-        data: {
-          id: form.get("id") as string,
-          user_id: user.uid,
-          todo_id: form.get("todo_id") as string,
-          title: form.get("title") as string,
-        },
-      });
-    }
-
-    case "delete-subtodo": {
-      return await db.subTodo.delete({
-        where: {
-          id: form.get("id") as string,
-        },
-      });
-    }
-
-    case "toggle-todo": {
-      const todo = await db.todo.update({
-        where: {
-          id: form.get("todoId") as string,
-        },
-        data: {
-          completed: !JSON.parse(form.get("completed") as string) as boolean,
-        },
-      });
-      return todo;
-    }
-
-    case "toggle-subTodo": {
-      const todo = await db.subTodo.update({
-        where: {
-          id: form.get("subTodoId") as string,
-        },
-        data: {
-          completed: !JSON.parse(form.get("completed") as string),
-        },
+    case "add-todo":
+      return todoService.addTodo({
+        id: getRequiredField(form, "id"),
+        user_id: user.uid,
+        title: getRequiredField(form, "title"),
+        category_id: getOptionalField(form, "category"),
       });
 
-      const subTodos = await db.subTodo.findMany({
-        where: {
-          todo_id: todo.todo_id,
-        },
+    case "edit-todo":
+      return todoService.editTodo(
+        getRequiredField(form, "todoId"),
+        getRequiredField(form, "title")
+      );
+
+    case "delete-todo":
+      return todoService.removeTodo(getRequiredField(form, "id"));
+
+    case "change-status":
+      return todoService.changeStatus(
+        getRequiredField(form, "id"),
+        getRequiredField(form, "status") as any
+      );
+
+    case "toggle-bookmark":
+      return todoService.toggleBookmark(
+        getRequiredField(form, "id"),
+        parseBooleanField(form, "bookmarked")
+      );
+
+    case "toggle-todo":
+      return todoService.toggleComplete(
+        getRequiredField(form, "todoId"),
+        parseBooleanField(form, "completed")
+      );
+
+    case "add-subtodo":
+      return subTodoService.addSubTodo({
+        id: getRequiredField(form, "id"),
+        user_id: user.uid,
+        todo_id: getRequiredField(form, "todo_id"),
+        title: getRequiredField(form, "title"),
       });
 
-      const index = subTodos.findIndex(({ completed }) => completed == false);
-      if (index == -1 && subTodos.length > 0) {
-        await db.todo.update({
-          where: {
-            id: todo.todo_id,
-          },
-          data: {
-            completed: true,
-          },
-        });
-      } else {
-        await db.todo.update({
-          where: {
-            id: todo.todo_id,
-          },
-          data: {
-            completed: false,
-          },
-        });
-      }
-      return todo;
-    }
+    case "delete-subtodo":
+      return subTodoService.removeSubTodo(getRequiredField(form, "id"));
 
-    case "edit-subtodo": {
-      return await db.subTodo.update({
-        where: {
-          id: form.get("subtodoId") as string,
-        },
-        data: {
-          title: form.get("title") as string,
-        },
+    case "toggle-subTodo":
+      return subTodoService.toggleSubTodoComplete(
+        getRequiredField(form, "subTodoId"),
+        parseBooleanField(form, "completed")
+      );
+
+    case "edit-subtodo":
+      return subTodoService.editSubTodo(
+        getRequiredField(form, "subtodoId"),
+        getRequiredField(form, "title")
+      );
+
+    case "add-cat":
+      return categoryService.addCategory({
+        id: getRequiredField(form, "id"),
+        user_id: user.uid,
+        category_name: getRequiredField(form, "category_name"),
+        display_name: getRequiredField(form, "display_name"),
       });
-    }
 
-    // case "get-subtodos": {
-    //   console.log('getsubtodos')
-    //   const subTodos = await db.subTodo.findMany({
-    //     where: {
-    //       todo_id: form.get('id') as string,
-    //     },
-    //   });
+    case "edit-category":
+      return categoryService.editCategory(
+        getRequiredField(form, "id"),
+        getRequiredField(form, "title")
+      );
 
-    //   return {subTodos}
-    // }
+    case "delete-cat":
+      return categoryService.removeCategory(getRequiredField(form, "id"));
+
+    default:
+      return json({ error: `Unknown action: ${action}` }, { status: 400 });
   }
-  // return await db.todo.create({
-  //   data: {
-  //     id: form.get("id"),
-  //     user_id: user.uid as string,
-  //     title: form.get("title"),
-  //     category_id: form.get("category"),
-  //   } as Todo,
-  // });
 };
 
-export default function Index() {
+// ─── Component ──────────────────────────────────────────────────────────────
+
+export default function HomePage() {
+  const { user, categories } = useLoaderData<typeof loader>();
   const [showCategory, setShowCategory] = useState(false);
-  const user: any = useLoaderData();
-  const [searchParams, setSearchParams] = useSearchParams();
-
-  searchParams.append("page", "0");
-  searchParams.append("cat", "all");
-
-  console.log(searchParams);
 
   return (
-    <div>
-      
-      <h1 className="text-3xl m-2 text-center font-bold mt-5">Todo-App</h1>
-      <div className="flex gap-2 items-center justify-center m-5">
-        <Form method="POST">
-          <button
-            name="action"
-            value="logout"
-            className="bg-red-700 text-white font-bold p-2 rounded-xl"
-          >
-            Signout
-          </button>
-        </Form>
+    <div className="app-layout">
+      <AppHeader
+        userName={user.name}
+        onToggleCategory={() => setShowCategory((v) => !v)}
+        showCategory={showCategory}
+      />
 
-        <button
-          className="bg-zinc-200 p-2 rounded-xl font-semibold"
-          onClick={() => setShowCategory(!showCategory)}
-        >
-          {showCategory ? (
-            <span className="text-red-600 font-bold">close</span>
-          ) : (
-            "Create Catagory"
-          )}
-        </button>
-      </div>
-      <div className="">
-        {showCategory ? <CategoryForm /> : ""}
-        <TodoForm />
+      <main className="app-main">
         <TodoList />
-      </div>
+      </main>
 
-      {/* <TodoList user={user} /> */}
-      
+      {/* FAB — floats over content */}
+      <TodoAddForm categories={categories} />
+
+      {/* Category popup modal */}
+      {showCategory && (
+        <CategoryModal onClose={() => setShowCategory(false)} />
+      )}
     </div>
   );
 }
