@@ -21,6 +21,8 @@ enum TodoStatus {
   ON_HOLD
   COMPLETED
   IN_PROGRESS
+
+  @@map("status")
 }
 
 model User {
